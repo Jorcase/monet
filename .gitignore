@@ -1,0 +1,26 @@
+# Byte-compiled / caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtualenv
+venv/
+.env
+.env.local
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+/media
+/staticfiles
+
+# VSCode
+.vscode/
+
+# Mac/Windows
+.DS_Store
+Thumbs.db
+
+# pcaps folder (si no queres subirlos)
+pcaps/
