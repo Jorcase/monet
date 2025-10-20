@@ -3,3 +3,4 @@ Django==5.2.7
 djangorestframework==3.16.1
 python-nmap==0.7.1
 sqlparse==0.5.3
+psutil==5.9.8
