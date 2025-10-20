@@ -17,6 +17,9 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
+from agente.views import agente_status
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path("agente/", agente_status, name="agente_status")
 ]
