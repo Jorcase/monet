@@ -32,6 +32,24 @@ carpeta management/commands/refresh_agente.py automatizacion del guardado de dat
 agregamos views.py
 creamos templates html y css para ver el modulo
 cambiamos en settings el time_zone
+pruebas correctas con diferentes interfaces, se probo que no permita la interfaz lo
+pruebas en la vm y tambien funciona correctamente, se pulleo los cambios, se instalaron los requerimientos, se migro y se probo.
+
+# Anotaciones 20102025 - segundo modulo
+creacion del models para el modulo detector
+agregar en settings la app
+agregue scapy en requirements
+creacion de network_range.py en services, sirve para saber que rango debe barrer el escaner
+para probarlo:    python manage.py shell 
+                  → from detector.services.network_range import get_local_network 
+                  → get_local_network()
+creacion de arp_scan.py
+para ejecutarlo en la vm debo utilizar sudo por los privilegios
+la latencia es una latencia aproximada, proximas versiones deberiamos mejorar con las posibilidades que proporciona scapy .time y eso implica guardar medir cada paquete por separado modificando la logica de este archivo
+creacion de persistence.py un helper que ayuda a automatizar y desglosar la informacion en sus respectivas tablas
+creacion de command 
+python manage.py detectar_hosts
+permite ejecutar toda la logica del modulo, podria servir para automatizar analisis diarios
 
 
 

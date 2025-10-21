@@ -56,7 +56,6 @@ interfaz (varchar) |
 tipo (varchar) -- 'escaner-activo'|'captura-pasiva'|'mixto' |
 total-hosts-detectados (integer) |
 notas (text)
-
 # host-detectado
 id |
 analisis-id (FK -> analisis-red) |
@@ -68,8 +67,6 @@ hostname (varchar nullable) |
 primera-vista (timestamp) |
 ultima-vista (timestamp) |
 notas (text)
-
-
 # dispositivo:
 id |
 ip (inet) |
@@ -81,6 +78,7 @@ estado (varchar) -- 'activo'|'inactivo'|'desconocido'
 
 - priorizar mac como identificador cuando este disponible
 
+
 # puerto_encontrado:
 id |
 analisis-id (FK -> analisis-red) |
@@ -91,7 +89,6 @@ protocolo (varchar) -- 'tcp'|'udp' |
 servicio (varchar nullable) |
 state (varchar) -- 'abierto'|'filtrado'|'cerrado' |
 detected-at (timestamp)
-
 # trabajo_scaner:
 id |
 analisis-id (FK -> analisis-red) |
@@ -112,7 +109,6 @@ direccion (varchar) -- 'entrada'|'salida'|'ambas' |
 total-pkt (integer) |
 ruta-pcap (varchar) |
 notas (text)
-
 
 # estadistica_paquete
 id |

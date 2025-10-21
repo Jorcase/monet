@@ -18,8 +18,10 @@ from django.contrib import admin
 from django.urls import path
 
 from agente.views import agente_status
+from detector.views import detector_status
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path("agente/", agente_status, name="agente_status")
+    path("agente/", agente_status, name="agente_status"),
+    path("detector/", detector_status, name="detector_status"),
 ]
