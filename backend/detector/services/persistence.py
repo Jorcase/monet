@@ -32,28 +32,45 @@ def persist_scan_results(analisis: AnalisisRed, hosts: list[dict]) -> dict:
             resumen["actualizados"] += 1
         
         if mac:
-            dispositivo, dispositivo_creado = Dispositivo.objects.update_or_create(
-                mac=mac,
-                defaults={
-                    "ip": ip,
-                    "hostname": hostname,
-                    "ultima_vez": ahora,
-                },
-            )
-            if dispositivo_creado:
-                dispositivo.primera_vez = ahora 
-                dispositivo.save(update_fields=["primera_vez"])
-            else:
-                if dispositivo.ip != ip:
+            dispositivo = Dispositivo.objects.filter(mac=mac).first()
+
+            if dispositivo:
+                old_ip = dispositivo.ip
+                old_hostname = dispositivo.hostname
+                old_ultima_vez = dispositivo.ultima_vez
+
+                campos = ["ultima_vez"]
+                dispositivo.ultima_vez = ahora
+
+                if hostname:
+                    if hostname != old_hostname:
+                        dispositivo.hostname = hostname
+                        campos.append("hostname")
+                elif not old_hostname and hostname == "":
+                    # mantenemos hostnames vacíos si no tenemos dato nuevo
+                    pass
+
+                if ip and old_ip != ip:
                     DispositivoHistorial.objects.create(
                         dispositivo=dispositivo,
-                        ip=dispositivo.ip,
+                        ip=old_ip,
                         mac=dispositivo.mac,
-                        inicio=dispositivo.primera_vez,
+                        inicio=old_ultima_vez or dispositivo.primera_vez,
                         fin=ahora,
                         motivo="dhcp",
                     )
-                    dispositivo.ip = ip 
-                    dispositivo.save(update_fields=["ip","ultima_vez"])
+                    dispositivo.ip = ip
+                    campos.append("ip")
+
+                dispositivo.save(update_fields=campos)
+
+            else:
+                Dispositivo.objects.create(
+                    ip=ip,
+                    mac=mac,
+                    hostname=hostname,
+                    primera_vez=ahora,
+                    ultima_vez=ahora,
+                )
 
     return resumen
