@@ -10,8 +10,6 @@ from detector.services.persistence  import persist_scan_results
 
 @require_http_methods(["GET", "POST"])
 def detector_status(request):
-    ultimo_analisis = AnalisisRed.objects.order_by("-inicio").prefetch_related("hosts_detectados").first()
-
     if request.method == "POST":
         try:
             snapshot = get_local_network()
@@ -40,8 +38,30 @@ def detector_status(request):
 
         return redirect("detector_status")
 
+    analisis_qs = AnalisisRed.objects.order_by("-inicio").prefetch_related("hosts_detectados")
+    analisis_list = list(analisis_qs)
+    analisis_seleccionado = None
+    seleccionado_id = request.GET.get("analisis_id")
+
+    if seleccionado_id:
+        for analisis in analisis_list:
+            if str(analisis.pk) == seleccionado_id:
+                analisis_seleccionado = analisis
+                break
+        else:
+            messages.warning(request, "El análisis seleccionado no existe.")
+
+    if not analisis_seleccionado:
+        analisis_seleccionado = analisis_list[0] if analisis_list else None
+
+    hosts = []
+    if analisis_seleccionado:
+        hosts = analisis_seleccionado.hosts_detectados.order_by("-ultima_vista")
+
     contexto = {
-        "analisis": ultimo_analisis,
-        "hosts": ultimo_analisis.hosts_detectados.order_by("-ultima_vista") if ultimo_analisis else [],
+        "analisis": analisis_seleccionado,
+        "hosts": hosts,
+        "historial": analisis_list,
+        "analisis_seleccionado_id": analisis_seleccionado.pk if analisis_seleccionado else None,
     }
     return render(request, "detector/status.html", contexto)
