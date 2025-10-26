@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 from django.utils import timezone
 
 class AnalisisRed(models.Model):
@@ -32,7 +33,7 @@ class Dispositivo(models.Model):
         ("desconocido","Desconocido"),
     ]
     ip = models.GenericIPAddressField()
-    mac =  models.CharField(max_length=32,unique=True)
+    mac = models.CharField(max_length=32)
     hostname =  models.CharField(max_length=255,blank=True)
     mac_aleatoria = models.BooleanField(default=False)
     primera_vez = models.DateTimeField(default=timezone.now)
@@ -51,6 +52,13 @@ class Dispositivo(models.Model):
         db_table = "dispositivo"
         verbose_name = "Dispositivo"
         verbose_name_plural = "Dispositivos"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["mac"],
+                condition=Q(mac_aleatoria=False),
+                name="dispositivo_mac_unica_real",
+            )
+        ]
 
     def __str__(self):
         return f"{self.hostname or self.mac} ({self.ip})"
