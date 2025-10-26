@@ -18,50 +18,6 @@
             </div>
         {% endif %}
 
-        {% if analisis %}
-            <section class="summary">
-                <h2>Análisis seleccionado</h2>
-                <ul>
-                    <li><strong>Interfaz:</strong> {{ analisis.interfaz }}</li>
-                    <li><strong>Inicio:</strong> {{ analisis.inicio }}</li>
-                    <li><strong>Fin:</strong> {{ analisis.fin|default:"-" }}</li>
-                    <li><strong>Total detectados:</strong> {{ analisis.total_hosts_detectados }}</li>
-                </ul>
-            </section>
-
-            <section class="table-wrapper">
-                <h3>Hosts detectados</h3>
-                {% if hosts %}
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>IP</th>
-                                <th>MAC</th>
-                                <th>Método</th>
-                                <th>Latencia (ms)</th>
-                                <th>Última vista</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for host in hosts %}
-                                <tr>
-                                    <td>{{ host.ip }}</td>
-                                    <td>{{ host.mac|default:"-" }}</td>
-                                    <td>{{ host.get_metodo_deteccion_display }}</td>
-                                    <td>{{ host.latencia_ms|default:"-" }}</td>
-                                    <td>{{ host.ultima_vista }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                {% else %}
-                    <p class="empty">Este análisis no registró hosts.</p>
-                {% endif %}
-            </section>
-        {% else %}
-            <p class="empty">Todavía no se registraron análisis.</p>
-        {% endif %}
-
         <form method="post" class="form" id="detector-form">
             {% csrf_token %}
             <label for="interface">Interfaz (opcional)</label>
@@ -80,21 +36,66 @@
                             <th>Interfaz</th>
                             <th>Tipo</th>
                             <th>Total hosts</th>
-                            <th>Fin</th>
+                            <th>Duración</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for item in historial %}
-                            <tr class="{% if item.id == analisis_seleccionado_id %}active{% endif %}">
-                                <td>
-                                    <a href="?analisis_id={{ item.id }}" class="history-link">
-                                        {{ item.inicio }}
-                                    </a>
-                                </td>
+                            <tr class="history-row {% if item.id == analisis_seleccionado_id %}active{% endif %}" data-analisis="{{ item.id }}">
+                                <td>{{ item.inicio }}</td>
                                 <td>{{ item.interfaz }}</td>
                                 <td>{{ item.get_tipo_display }}</td>
                                 <td>{{ item.total_hosts_detectados }}</td>
-                                <td>{{ item.fin|default:"-" }}</td>
+                                <td>{{ item.duracion_ms|default:"-" }} ms</td>
+                                <td class="toggle-cell">
+                                    <button type="button" class="toggle-btn" data-target="detalle-{{ item.id }}">
+                                        {% if item.id == analisis_seleccionado_id %}Ocultar{% else %}Ver detalle{% endif %}
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr id="detalle-{{ item.id }}" class="detail-row {% if item.id == analisis_seleccionado_id %}open{% endif %}">
+                                <td colspan="6">
+                                    <div class="detail-card">
+                                        <div class="detail-meta">
+                                            <div><strong>Inicio:</strong> {{ item.inicio }}</div>
+                                            <div><strong>Fin:</strong> {{ item.fin|default:"-" }}</div>
+                                            <div><strong>Duración:</strong> {{ item.duracion_ms|default:"-" }} ms</div>
+                                            <div><strong>Notas:</strong> {{ item.notas|default:"-" }}</div>
+                                        </div>
+                                        <h4>Hosts detectados</h4>
+                                        {% with item.hosts_detectados.all as hosts_item %}
+                                            {% if hosts_item %}
+                                                <table class="hosts-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>IP</th>
+                                                            <th>MAC</th>
+                                                            <th>Método</th>
+                                                            <th>Latencia (ms)</th>
+                                                            <th>Última vista</th>
+                                                            <th>Hostname</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for host in hosts_item %}
+                                                            <tr>
+                                                                <td>{{ host.ip }}</td>
+                                                                <td>{{ host.mac|default:"-" }}</td>
+                                                                <td>{{ host.get_metodo_deteccion_display }}</td>
+                                                                <td>{{ host.latencia_ms|default:"-" }}</td>
+                                                                <td>{{ host.ultima_vista }}</td>
+                                                                <td>{{ host.hostname|default:"-" }}</td>
+                                                            </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            {% else %}
+                                                <p class="empty">Este análisis no registró hosts.</p>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </div>
+                                </td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -118,6 +119,21 @@
                 button.disabled = true;
                 button.dataset.originalText = button.textContent;
                 button.textContent = "Ejecutando...";
+            });
+        })();
+
+        (function() {
+            const buttons = document.querySelectorAll(".toggle-btn");
+            buttons.forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    const targetId = btn.dataset.target;
+                    const row = document.getElementById(targetId);
+                    if (!row) {
+                        return;
+                    }
+                    const isOpen = row.classList.toggle("open");
+                    btn.textContent = isOpen ? "Ocultar" : "Ver detalle";
+                });
             });
         })();
     </script>

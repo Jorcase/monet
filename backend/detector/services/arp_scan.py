@@ -1,13 +1,20 @@
 import time #para medir latencia de cada rta
-from typing import Iterable
+import socket
 
 from scapy.all import ARP, Ether, srp
 from ipaddress import IPv4Network, IPv4Address
 
+def es_mac_aleatoria(mac: str) -> bool:
+    try:
+        primer_octeto = int(mac.split(":")[0],16)
+    except (ValueError, IndexError):
+        return False
+    return bool(primer_octeto & 0b10)
+    
 def perform_arp_scan(
     network: IPv4Network,
     interface: str,
-    *, #keyword-only
+    *, #keyword-only 
     local_ip: IPv4Address | None = None,
     timeout: int = 2,
     retry: int = 0,
@@ -41,8 +48,27 @@ def perform_arp_scan(
     seen_ips.add(str(network.broadcast_address))
 
     resultados = []
-    for _, reply in answered:
+
+    if local_ip is None:
+        socket.setdefaulttimeout(1)
+
+    for enviado, reply in answered:
         ip_respuesta = reply.psrc
+
+        mac_respuesta = reply.hwsrc
+        mac_random = es_mac_aleatoria(mac_respuesta)
+
+        latencia_individual = None
+        if hasattr(enviado, "sent_time") and hasattr(reply, "time"):
+            latencia_individual = (reply.time - enviado.sent_time) * 1000
+        elif hasattr(reply, "time"):
+            latencia_individual = (reply.time - start) * 1000
+
+        try:
+            hostname = socket.gethostbyaddr(ip_respuesta)[0]
+        except (socket.herror, socket.gaierror, TimeoutError, OSError):
+            hostname = ""
+        
 
         if ip_respuesta in seen_ips:
             continue
@@ -50,10 +76,12 @@ def perform_arp_scan(
         resultados.append(
             {
                 "ip": ip_respuesta,
-                "mac": reply.hwsrc,
-                "latencia_ms": round(elapsed_ms,2),
+                "mac": mac_respuesta,
+                "latencia_ms": round(latencia_individual, 2) if latencia_individual is not None else None,
                 "metodo": "arp",
+                "hostname": hostname,
+                "mac_aleatoria": mac_random,
             }
         )
 
-    return resultados
+    return resultados, elapsed_ms

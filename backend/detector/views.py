@@ -22,16 +22,17 @@ def detector_status(request):
                 notas="Deteccion de hosts desde la vista web",
             )
 
-            hosts = perform_arp_scan(snapshot.network, interfaz, local_ip=snapshot.ip_local)
+            hosts, duracion_total_ms = perform_arp_scan(snapshot.network, interfaz, local_ip=snapshot.ip_local)
             resumen = persist_scan_results(analisis, hosts)
 
             analisis.total_hosts_detectados = resumen["nuevos"] + resumen["actualizados"]
             analisis.fin = timezone.now()
-            analisis.save(update_fields=["total_hosts_detectados", "fin"])
+            analisis.duracion_ms = int(duracion_total_ms)
+            analisis.save(update_fields=["total_hosts_detectados", "fin", "duracion_ms"])
 
             messages.success(
                 request,
-                f"Detección completada en {interfaz}. Nuevos: {resumen['nuevos']}, actualizados: {resumen['actualizados']}."
+                f"Detección completada en {interfaz}. Nuevos: {resumen['nuevos']}, actualizados: {resumen['actualizados']}. Duración: {int(duracion_total_ms)} ms."
             )
         except RuntimeError as exc:
             messages.error(request, str(exc))

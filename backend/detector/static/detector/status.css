@@ -29,21 +29,6 @@ h1 {
     color: #38bdf8;
 }
 
-.summary ul {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 1.5rem 0;
-}
-
-.summary li {
-    margin-bottom: 0.5rem;
-    font-size: 0.95rem;
-}
-
-.table-wrapper {
-    margin-bottom: 2rem;
-}
-
 table {
     width: 100%;
     border-collapse: collapse;
@@ -172,15 +157,85 @@ button:disabled {
     margin-top: 1rem;
 }
 
-.history-link {
-    color: #38bdf8;
-    text-decoration: none;
-}
-
-.history-link:hover {
-    text-decoration: underline;
-}
-
 tr.active {
     background: rgba(56, 189, 248, 0.08);
+}
+
+.toggle-cell {
+    width: 140px;
+    text-align: right;
+}
+
+.toggle-btn {
+    padding: 0.55rem 1rem;
+    border-radius: 9999px;
+    border: none;
+    background: rgba(56, 189, 248, 0.2);
+    color: #38bdf8;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.toggle-btn:hover {
+    background: rgba(56, 189, 248, 0.35);
+}
+
+.detail-row {
+    display: none;
+    background: rgba(12, 22, 38, 0.85);
+}
+
+.detail-row.open {
+    display: table-row;
+}
+
+.detail-card {
+    padding: 1.2rem 1.4rem;
+    border-radius: 16px;
+    background: rgba(6, 12, 24, 0.75);
+    box-shadow: inset 0 0 0 1px rgba(94, 234, 212, 0.05);
+}
+
+.detail-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.5rem 1.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+    color: #94a3b8;
+}
+
+.detail-card h4 {
+    margin: 1rem 0 0.8rem;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #38bdf8;
+}
+
+.hosts-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: rgba(11, 18, 32, 0.6);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.hosts-table th,
+.hosts-table td {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+    padding: 0.65rem 0.75rem;
+    font-size: 0.85rem;
+}
+
+.hosts-table th {
+    background: rgba(56, 189, 248, 0.12);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+}
+
+.hosts-table tr:last-child td {
+    border-bottom: none;
 }

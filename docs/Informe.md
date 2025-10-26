@@ -51,5 +51,19 @@ creacion de command
 python manage.py detectar_hosts
 permite ejecutar toda la logica del modulo, podria servir para automatizar analisis diarios
 
+# Anotaciones 21102025 - segundo modulo
+creacion de vistas, html y css para probar el modulo
+pusheado y pulleado en la vm para iniciar pruebas
+para actualizar en la vm --IMPORTANTE--:
+# sudo python3 -m pip install --break-system-packages -r requirements.txt
+de ahi se puede correr normalmente y probar
+notas de las pruebas: 
+      algunos dispositivos como celulares si no estan en uso, no son detectados pero si estan siendo utilizados si, un dispositivo al conectarse a una red wifi por defecto utiliza mac aleatoria, para cambiar eso debe configurarse el dispositivo
+
+# Anotaciones 261025 - segundo modulo
+cambio en el modelo de detector en dispositivo para poder registrar bien los dispositivos
+problema: dispositivos conectados por wifi por defecto tienen mac aleatoria lo que hace ineficiente el guardado de datos en dispositivos
+solucion: intentar obtener el hostname en todos los dispositivos y detectar cuando la mac es aleatoria para que a la hora de guardar en dispositivo, sea por el hostname si esque se encuentra sino por ip de ultimo caso y marcar como dispositivo temporal.
+
 
 

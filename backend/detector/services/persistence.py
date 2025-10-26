@@ -10,8 +10,9 @@ def persist_scan_results(analisis: AnalisisRed, hosts: list[dict]) -> dict:
         ip = host["ip"]
         mac = host.get("mac","")
         metodo = host.get("metodo","arp")
+        hostname = host.get("hostname", "")
+        mac_random = host.get("mac_aleatoria", False)
         latencia = host.get("latencia_ms")
-        hostname = host.get("hostname","")
         
         host_obj, creado =  HostDetectado.objects.update_or_create(
             analisis=analisis,
@@ -31,46 +32,66 @@ def persist_scan_results(analisis: AnalisisRed, hosts: list[dict]) -> dict:
         else:
             resumen["actualizados"] += 1
         
-        if mac:
+        if not mac:
+            continue  
+
+        dispositivo = None
+
+        if mac_random:
+
+            if hostname:
+                dispositivo = Dispositivo.objects.filter(
+                    mac_aleatoria=True,
+                    hostname=hostname,
+                ).first()
+
+            if not dispositivo:
+                dispositivo = (
+                    Dispositivo.objects.filter(mac_aleatoria=True, ip=ip)
+                    .order_by("-ultima_vez")
+                    .first()
+                )
+        else:
             dispositivo = Dispositivo.objects.filter(mac=mac).first()
 
-            if dispositivo:
-                old_ip = dispositivo.ip
-                old_hostname = dispositivo.hostname
-                old_ultima_vez = dispositivo.ultima_vez
+        if dispositivo:
+            anterior_ultima_vez = dispositivo.ultima_vez
+            dispositivo.ultima_vez = ahora
 
-                campos = ["ultima_vez"]
-                dispositivo.ultima_vez = ahora
+            if hostname and hostname != dispositivo.hostname:
+                dispositivo.hostname = hostname
 
-                if hostname:
-                    if hostname != old_hostname:
-                        dispositivo.hostname = hostname
-                        campos.append("hostname")
-                elif not old_hostname and hostname == "":
-                    # mantenemos hostnames vacíos si no tenemos dato nuevo
-                    pass
-
-                if ip and old_ip != ip:
-                    DispositivoHistorial.objects.create(
-                        dispositivo=dispositivo,
-                        ip=old_ip,
-                        mac=dispositivo.mac,
-                        inicio=old_ultima_vez or dispositivo.primera_vez,
-                        fin=ahora,
-                        motivo="dhcp",
-                    )
-                    dispositivo.ip = ip
-                    campos.append("ip")
-
-                dispositivo.save(update_fields=campos)
-
+            if mac_random:
+                dispositivo.mac_aleatoria = True
+                dispositivo.metodo_identificacion = "hostname" if hostname else "ip"
             else:
-                Dispositivo.objects.create(
-                    ip=ip,
-                    mac=mac,
-                    hostname=hostname,
-                    primera_vez=ahora,
-                    ultima_vez=ahora,
+                dispositivo.mac = mac
+                dispositivo.mac_aleatoria = False
+                dispositivo.metodo_identificacion = "mac"
+
+            if dispositivo.ip != ip:
+                DispositivoHistorial.objects.create(
+                  dispositivo=dispositivo,
+                  ip=dispositivo.ip,
+                  mac=dispositivo.mac,
+                  inicio=anterior_ultima_vez or dispositivo.primera_vez,
+                  fin=ahora,
+                  motivo="dhcp",
                 )
+                dispositivo.ip = ip
+
+            dispositivo.save()
+        else:
+            metodo = "hostname" if hostname else ("mac" if not mac_random else "ip")
+            Dispositivo.objects.create(
+                ip=ip,
+                mac=mac,
+                hostname=hostname,
+                mac_aleatoria=mac_random,
+                primera_vez=ahora,
+                ultima_vez=ahora,
+                metodo_identificacion=metodo,
+            )
+
 
     return resumen

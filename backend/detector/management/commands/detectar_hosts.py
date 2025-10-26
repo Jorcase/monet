@@ -26,22 +26,25 @@ class Command(BaseCommand):
             notas="Detección de hosts por ARP",
         )
         try:
-            hosts = perform_arp_scan(
+            hosts, duracion_total_ms = perform_arp_scan(
                 snapshot.network,
                 interfaz,
                 local_ip=snapshot.ip_local,
             )
+
         except RuntimeError as exc:
             raise CommandError(str(exc))
         
         resumen = persist_scan_results(analisis, hosts)
         analisis.total_hosts_detectados = resumen["nuevos"] + resumen["actualizados"]
         analisis.fin = timezone.now()
-        analisis.save(update_fields=["total_hosts_detectados", "fin"])
+        analisis.duracion_ms = int(duracion_total_ms)
+        analisis.save(update_fields=["total_hosts_detectados", "fin", "duracion_ms"])
+
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"Detección completada. Nuevos: {resumen['nuevos']}, actualizados: {resumen['actualizados']}."
+                f"Detección completada. Nuevos: {resumen['nuevos']}, actualizados: {resumen['actualizados']}. Duración: {int(duracion_total_ms)} ms."
             )
         )
         if not hosts:

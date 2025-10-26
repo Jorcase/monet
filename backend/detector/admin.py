@@ -3,7 +3,7 @@ from .models import AnalisisRed,HostDetectado,Dispositivo,DispositivoHistorial
 
 @admin.register(AnalisisRed)
 class AnalisisRedAdmin(admin.ModelAdmin):
-    list_display = ("id", "interfaz", "tipo", "inicio", "fin", "total_hosts_detectados")
+    list_display = ("id", "interfaz", "tipo", "inicio", "fin", "total_hosts_detectados","duracion_ms")
     list_filter = ("tipo", "interfaz")
     search_fields = ("interfaz", "notas")
 
@@ -17,8 +17,8 @@ class HostDetectadoAdmin(admin.ModelAdmin):
 
 @admin.register(Dispositivo)
 class DispositivoAdmin(admin.ModelAdmin):
-    list_display = ("mac", "ip", "hostname", "estado", "ultima_vez")
-    list_filter = ("estado",)
+    list_display = ("mac", "ip", "hostname","mac_aleatoria", "estado", "ultima_vez","metodo_identificacion")
+    list_filter = ("estado", "mac_aleatoria", "metodo_identificacion")
     search_fields = ("mac", "ip", "hostname")
 
 

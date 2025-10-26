@@ -14,6 +14,7 @@ class AnalisisRed(models.Model):
     interfaz = models.CharField(max_length=64)
     tipo = models.CharField(max_length=32, choices=TIPO_CHOICES)
     total_hosts_detectados = models.PositiveIntegerField(default=0)
+    duracion_ms = models.PositiveIntegerField(null=True, blank=True)
     notas = models.TextField(blank=True)
 
     class Meta:
@@ -33,9 +34,18 @@ class Dispositivo(models.Model):
     ip = models.GenericIPAddressField()
     mac =  models.CharField(max_length=32,unique=True)
     hostname =  models.CharField(max_length=255,blank=True)
+    mac_aleatoria = models.BooleanField(default=False)
     primera_vez = models.DateTimeField(default=timezone.now)
     ultima_vez = models.DateTimeField(default=timezone.now)
     estado = models.CharField(max_length=32, choices=ESTADO_CHOICES, default="desconocido")
+    METODO_IDENT_CHOICES = [
+    ("mac", "MAC"),
+    ("hostname", "Hostname"),
+    ("ip", "IP"),
+    ("manual", "Manual"),
+    ]
+    metodo_identificacion = models.CharField(max_length=16, choices=METODO_IDENT_CHOICES, default="mac")
+
 
     class Meta:
         db_table = "dispositivo"
