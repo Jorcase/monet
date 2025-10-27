@@ -36,6 +36,8 @@ class Dispositivo(models.Model):
     mac = models.CharField(max_length=32)
     hostname =  models.CharField(max_length=255,blank=True)
     mac_aleatoria = models.BooleanField(default=False)
+    vendor = models.CharField(max_length=64, blank=True)
+    es_temporal = models.BooleanField(default=False)
     primera_vez = models.DateTimeField(default=timezone.now)
     ultima_vez = models.DateTimeField(default=timezone.now)
     estado = models.CharField(max_length=32, choices=ESTADO_CHOICES, default="desconocido")

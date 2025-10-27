@@ -17,8 +17,8 @@ class HostDetectadoAdmin(admin.ModelAdmin):
 
 @admin.register(Dispositivo)
 class DispositivoAdmin(admin.ModelAdmin):
-    list_display = ("mac", "ip", "hostname","mac_aleatoria", "estado", "ultima_vez","metodo_identificacion")
-    list_filter = ("estado", "mac_aleatoria", "metodo_identificacion")
+    list_display = ("mac", "ip", "hostname", "mac_aleatoria", "es_temporal", "vendor" ,"estado", "ultima_vez", "metodo_identificacion")
+    list_filter = ("estado", "mac_aleatoria", "es_temporal","vendor", "metodo_identificacion")
     search_fields = ("mac", "ip", "hostname")
 
 
@@ -27,4 +27,3 @@ class DispositivoHistorialAdmin(admin.ModelAdmin):
     list_display = ("dispositivo", "ip", "mac", "inicio", "fin", "motivo")
     list_filter = ("motivo",)
     search_fields = ("dispositivo__mac", "ip", "mac")
-

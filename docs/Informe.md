@@ -64,6 +64,9 @@ notas de las pruebas:
 cambio en el modelo de detector en dispositivo para poder registrar bien los dispositivos
 problema: dispositivos conectados por wifi por defecto tienen mac aleatoria lo que hace ineficiente el guardado de datos en dispositivos
 solucion: intentar obtener el hostname en todos los dispositivos y detectar cuando la mac es aleatoria para que a la hora de guardar en dispositivo, sea por el hostname si esque se encuentra sino por ip de ultimo caso y marcar como dispositivo temporal.
+actualizacion para detectar latencia con cada dispositivo, luego la general del analisis, mejora para intentar detectar el hostname de los dispositivos, mejora para el campo de estado de los dispositivos, mejora en las vistas para poder debuggear bien todas las pruebas, ya se reconocen los dispositivos si esque tienen mac constante o aleatoria y se actualiza si esque son temporarios o no.
 
-
-
+# Anotaciones 271025 - segundo modulo
+dependencia opcional en la VM - IMPORTANTE - sudo apt install samba-common-bin - Para nmblookup
+creacion en services, hostname.py para poder intentar detectar el hostname en la deteccion de dispositivos en la red local, utilizando dns inverso con libreria de sockets, luego con netBIOS(nmblookup) NBNS, funciona como fallback pero poco eficiente ya que los dispositivos actuales no trabajan con eso o lo tienen desactivado por defecto al igual que los rooters, la obtencion de hostname se intentara resolver mas adelante en el modulo de captura_pasiva
+se agrego en models de dispostivo el campo vendor, capaz de detectar con los primeros 3 bytes de la mac el fabricante de cada dispositivo, se creo un helper que utiliza netaddr para resolverlo, ahora en teoria se podria agregar como informacion a cada dispositvo.

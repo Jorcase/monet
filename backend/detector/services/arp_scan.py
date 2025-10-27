@@ -3,6 +3,8 @@ import socket
 
 from scapy.all import ARP, Ether, srp
 from ipaddress import IPv4Network, IPv4Address
+from detector.services.hostname import resolve_hostname
+
 
 def es_mac_aleatoria(mac: str) -> bool:
     try:
@@ -64,12 +66,10 @@ def perform_arp_scan(
         elif hasattr(reply, "time"):
             latencia_individual = (reply.time - start) * 1000
 
-        try:
-            hostname = socket.gethostbyaddr(ip_respuesta)[0]
-        except (socket.herror, socket.gaierror, TimeoutError, OSError):
-            hostname = ""
-        
 
+        hostname = resolve_hostname(ip_respuesta)
+    
+    
         if ip_respuesta in seen_ips:
             continue
         seen_ips.add(ip_respuesta)
