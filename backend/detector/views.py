@@ -111,7 +111,7 @@ def detector_devices(request):
         "dispositivos": dispositivos,
         "historiales": historiales,
     }
-    return render(request, "detector/devices.html", contexto)
+    return render(request, "detector/dispositivos.html", contexto)
 
 
 def detector_analyses(request):
@@ -133,7 +133,7 @@ def detector_analyses(request):
         "analisis_list": analisis_list,
         "analisis_detalle": analisis_detalle,
     }
-    return render(request, "detector/analyses.html", contexto)
+    return render(request, "detector/analisis.html", contexto)
 def detector_hosts(request):
     hosts_qs = (
         HostDetectado.objects.select_related("analisis")
@@ -144,4 +144,4 @@ def detector_hosts(request):
     contexto = {
         "hosts": hosts,
     }
-    return render(request, "detector/hosts.html", contexto)
+    return render(request, "detector/hosts_detectados.html", contexto)

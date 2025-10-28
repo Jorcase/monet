@@ -25,7 +25,7 @@ urlpatterns = [
     path("", agente_status, name="home"),
     path("agente/", agente_status, name="agente_status"),
     path("detector/", detector_status, name="detector_status"),
-    path("dispositivos/", detector_devices, name="detector_devices"),
+    path("dispositivos/", detector_devices, name="detector_dispositivos"),
     path("hosts/", detector_hosts, name="detector_hosts"),
-    path("analisis/", detector_analyses, name="detector_analyses"),
+    path("analisis/", detector_analyses, name="detector_analisis"),
 ]
