@@ -8,6 +8,12 @@ User: monet
 Pass: ubuntu
 Ver interfaz: ifconfig o ip a (ej enp6s0)
 
+# activar venv - source .venv/bin/activate SOLO PARA PC LOCAL
+# VM no utiliza venv, instala todo globalmente con
+# sudo python3 -m pip install --break-system-packages -r requirements.txt
+
+
+
 Instalaciones:
 	Paquetes de sistema: tcpdump, nmap, libpcap-dev, python3, pip3, git
 	Paquetes Python(Instalados globalmente con --break-system-packages): scapy, python-nmap, pycryptodome, reportlab, psycopg2-binary, django, djangorestframework
@@ -70,3 +76,4 @@ actualizacion para detectar latencia con cada dispositivo, luego la general del 
 dependencia opcional en la VM - IMPORTANTE - sudo apt install samba-common-bin - Para nmblookup
 creacion en services, hostname.py para poder intentar detectar el hostname en la deteccion de dispositivos en la red local, utilizando dns inverso con libreria de sockets, luego con netBIOS(nmblookup) NBNS, funciona como fallback pero poco eficiente ya que los dispositivos actuales no trabajan con eso o lo tienen desactivado por defecto al igual que los rooters, la obtencion de hostname se intentara resolver mas adelante en el modulo de captura_pasiva
 se agrego en models de dispostivo el campo vendor, capaz de detectar con los primeros 3 bytes de la mac el fabricante de cada dispositivo, se creo un helper que utiliza netaddr para resolverlo, ahora en teoria se podria agregar como informacion a cada dispositvo.
+vistas creadas para primera presentacion del backend local generadas con ia para ahorrar tiempo por el momento utilizando solamente html y css

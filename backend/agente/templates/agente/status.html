@@ -1,15 +1,12 @@
+{% extends "base.html" %}
 {% load static %}
 
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Estado del Agente</title>
-    <link rel="stylesheet" href="{% static 'agente/status.css' %}">
-</head>
-<body>
-    <div class="card">
-        <h1>Agente Local</h1>
+{% block title %}Agente local · MONET{% endblock %}
+
+{% block content %}
+<div class="card grid two">
+    <section>
+        <h2>Sincronizar</h2>
 
         {% if mensaje %}
             <div class="alert alert-success">{{ mensaje }}</div>
@@ -17,28 +14,34 @@
             <div class="alert alert-error">{{ error }}</div>
         {% endif %}
 
-        {% if agente %}
-            <table>
-                <tr><th>Hostname</th><td>{{ agente.hostname }}</td></tr>
-                  <tr><th>Interfaz</th><td>{{ agente.interfaz }}</td></tr>
-                  <tr><th>IP local</th><td>{{ agente.ip_local }}/{{ agente.cidr }}</td></tr>
-                  <tr><th>MAC</th><td>{{ agente.mac }}</td></tr>
-                  <tr><th>Última actualización</th><td>{{ agente.ultima_actualizacion_local }}</td></tr>
-                  {% if agente.notas %}
-                      <tr><th>Notas</th><td>{{ agente.notas }}</td></tr>
-                  {% endif %}
-            </table>
-        {% else %}
-            <p class="empty">Todavía no hay registro del agente.</p>
-        {% endif %}
-
-        <form method="post">
+        <form method="post" class="grid">
             {% csrf_token %}
             <label for="interface">Interfaz (opcional)</label>
             <input type="text" id="interface" name="interface" placeholder="ej. enp6s0">
 
-            <button type="submit" class="btn">Actualizar información</button>
+            <button type="submit">Actualizar información</button>
+            <p class="note">Si no se especifica, se utilizará la interfaz prioritaria detectada por el agente.</p>
         </form>
-    </div>
-</body>
-</html>
+    </section>
+
+    <section>
+        <h1>Agente local</h1>
+        <p class="note">Última sincronización con la interfaz seleccionada.</p>
+
+        {% if agente %}
+            <table>
+                <tr><th>Hostname</th><td>{{ agente.hostname }}</td></tr>
+                <tr><th>Interfaz</th><td>{{ agente.interfaz }}</td></tr>
+                <tr><th>IP local</th><td>{{ agente.ip_local }}/{{ agente.cidr }}</td></tr>
+                <tr><th>MAC</th><td>{{ agente.mac }}</td></tr>
+                <tr><th>Última actualización</th><td>{{ agente.ultima_actualizacion_local }}</td></tr>
+                {% if agente.notas %}
+                    <tr><th>Notas</th><td>{{ agente.notas }}</td></tr>
+                {% endif %}
+            </table>
+        {% else %}
+            <p class="empty">Todavía no hay registro del agente.</p>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}
