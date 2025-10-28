@@ -11,33 +11,37 @@
         <table>
             <thead>
                 <tr>
+                    <th>ID</th>
                     <th>MAC</th>
                     <th>IP</th>
                     <th>Hostname</th>
                     <th>Vendor</th>
-                    <th>Estado</th>
+                    <th>MAC aleatoria</th>
                     <th>Temporal</th>
+                    <th>Estado</th>
+                    <th>Método identificación</th>
+                    <th>Primera vez</th>
                     <th>Última vez</th>
                 </tr>
             </thead>
             <tbody>
                 {% for dispositivo in dispositivos %}
                     <tr>
+                        <td>{{ dispositivo.id }}</td>
                         <td>{{ dispositivo.mac }}</td>
                         <td>{{ dispositivo.ip }}</td>
                         <td>{{ dispositivo.hostname|default:"-" }}</td>
                         <td>{{ dispositivo.vendor|default:"-" }}</td>
-                        <td>
-                            <span class="tag {% if dispositivo.estado == 'inactivo' %}warning{% elif dispositivo.estado == 'desconocido' %}danger{% endif %}">
-                                {{ dispositivo.get_estado_display }}
-                            </span>
-                        </td>
+                        <td>{% if dispositivo.mac_aleatoria %}Sí{% else %}No{% endif %}</td>
                         <td>{% if dispositivo.es_temporal %}Sí{% else %}No{% endif %}</td>
+                        <td>{{ dispositivo.get_estado_display }}</td>
+                        <td>{{ dispositivo.get_metodo_identificacion_display }}</td>
+                        <td>{{ dispositivo.primera_vez }}</td>
                         <td>{{ dispositivo.ultima_vez }}</td>
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="7" class="empty">Sin dispositivos registrados.</td>
+                        <td colspan="11" class="empty">Sin dispositivos registrados.</td>
                     </tr>
                 {% endfor %}
             </tbody>

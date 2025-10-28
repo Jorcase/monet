@@ -72,43 +72,29 @@
                                         <table class="hosts-table">
                                             <thead>
                                                 <tr>
+                                                    <th>ID</th>
                                                     <th>IP</th>
                                                     <th>MAC</th>
                                                     <th>Método</th>
                                                     <th>Latencia (ms)</th>
-                                                    <th>Última vista</th>
                                                     <th>Hostname</th>
-                                                    <th>Vendor</th>
-                                                    <th>MAC aleatoria</th>
-                                                    <th>Temporal</th>
-                                                    <th>Estado</th>
+                                                    <th>Primera vista</th>
+                                                    <th>Última vista</th>
+                                                    <th>Notas</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {% for host in hosts_item %}
                                                     <tr>
+                                                        <td>{{ host.id }}</td>
                                                         <td>{{ host.ip }}</td>
                                                         <td>{{ host.mac|default:"-" }}</td>
                                                         <td>{{ host.get_metodo_deteccion_display }}</td>
                                                         <td>{{ host.latencia_ms|default:"-" }}</td>
-                                                        <td>{{ host.ultima_vista }}</td>
                                                         <td>{{ host.hostname|default:"-" }}</td>
-                                                        <td>{{ host.vendor_flag|default:"-" }}</td>
-                                                        <td>
-                                                            {% if host.mac_aleatoria_flag is not None %}
-                                                                {% if host.mac_aleatoria_flag %}Sí{% else %}No{% endif %}
-                                                            {% else %}
-                                                                -
-                                                            {% endif %}
-                                                        </td>
-                                                        <td>
-                                                            {% if host.es_temporal_flag is not None %}
-                                                                {% if host.es_temporal_flag %}Sí{% else %}No{% endif %}
-                                                            {% else %}
-                                                                -
-                                                            {% endif %}
-                                                        </td>
-                                                        <td>{{ host.estado_flag|default:"-" }}</td>
+                                                        <td>{{ host.primera_vista }}</td>
+                                                        <td>{{ host.ultima_vista }}</td>
+                                                        <td>{{ host.notas|default:"-" }}</td>
                                                     </tr>
                                                 {% endfor %}
                                             </tbody>
