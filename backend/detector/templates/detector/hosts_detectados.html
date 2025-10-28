@@ -11,7 +11,6 @@
         <table>
             <thead>
                 <tr>
-                    <th>ID</th>
                     <th>Análisis</th>
                     <th>IP</th>
                     <th>MAC</th>
@@ -26,7 +25,6 @@
             <tbody>
                 {% for host in hosts %}
                     <tr>
-                        <td>{{ host.id }}</td>
                         <td>{{ host.analisis.id }}</td>
                         <td>{{ host.ip }}</td>
                         <td>{{ host.mac|default:"-" }}</td>
@@ -39,7 +37,7 @@
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="10" class="empty">Aún no hay hosts registrados.</td>
+                        <td colspan="9" class="empty">Aún no hay hosts registrados.</td>
                     </tr>
                 {% endfor %}
             </tbody>

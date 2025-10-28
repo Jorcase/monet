@@ -11,7 +11,6 @@
         <table>
             <thead>
                 <tr>
-                    <th>ID</th>
                     <th>MAC</th>
                     <th>IP</th>
                     <th>Hostname</th>
@@ -27,7 +26,6 @@
             <tbody>
                 {% for dispositivo in dispositivos %}
                     <tr>
-                        <td>{{ dispositivo.id }}</td>
                         <td>{{ dispositivo.mac }}</td>
                         <td>{{ dispositivo.ip }}</td>
                         <td>{{ dispositivo.hostname|default:"-" }}</td>
@@ -57,9 +55,9 @@
         <table>
             <thead>
                 <tr>
-                    <th>Dispositivo</th>
-                    <th>MAC</th>
-                    <th>IP</th>
+                    <th>IP actual</th>
+                    <th>MAC anterior</th>
+                    <th>IP anterior</th>
                     <th>Inicio</th>
                     <th>Fin</th>
                     <th>Motivo</th>
@@ -68,7 +66,7 @@
             <tbody>
                 {% for hist in historiales %}
                     <tr>
-                        <td>{{ hist.dispositivo.hostname|default:hist.dispositivo.mac }}</td>
+                        <td>{{ hist.dispositivo.ip }}</td>
                         <td>{{ hist.mac }}</td>
                         <td>{{ hist.ip }}</td>
                         <td>{{ hist.inicio }}</td>
