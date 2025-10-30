@@ -13,7 +13,9 @@ def persist_scan_results(analisis: AnalisisRed, hosts: list[dict]) -> dict:
 
     for host in hosts:
         ip = host["ip"]
-        mac = host.get("mac","")
+        mac = host.get("mac", "")
+        if mac:
+            mac = mac.lower()
         metodo = host.get("metodo","arp")
         hostname = host.get("hostname", "")
         mac_random = host.get("mac_aleatoria", False)

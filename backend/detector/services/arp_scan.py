@@ -57,7 +57,7 @@ def perform_arp_scan(
     for enviado, reply in answered:
         ip_respuesta = reply.psrc
 
-        mac_respuesta = reply.hwsrc
+        mac_respuesta = reply.hwsrc.lower()
         mac_random = es_mac_aleatoria(mac_respuesta)
 
         latencia_individual = None

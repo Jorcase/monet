@@ -33,7 +33,7 @@ class Dispositivo(models.Model):
         ("desconocido","Desconocido"),
     ]
     ip = models.GenericIPAddressField()
-    mac = models.CharField(max_length=32)
+    mac = models.CharField(max_length=32, unique=True)
     hostname =  models.CharField(max_length=255,blank=True)
     mac_aleatoria = models.BooleanField(default=False)
     vendor = models.CharField(max_length=64, blank=True)
@@ -54,13 +54,7 @@ class Dispositivo(models.Model):
         db_table = "dispositivo"
         verbose_name = "Dispositivo"
         verbose_name_plural = "Dispositivos"
-        constraints = [
-            models.UniqueConstraint(
-                fields=["mac"],
-                condition=Q(mac_aleatoria=False),
-                name="dispositivo_mac_unica_real",
-            )
-        ]
+        constraints = []
 
     def __str__(self):
         return f"{self.hostname or self.mac} ({self.ip})"
