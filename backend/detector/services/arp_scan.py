@@ -8,7 +8,7 @@ from detector.services.hostname import resolve_hostname
 
 def es_mac_aleatoria(mac: str) -> bool:
     try:
-        primer_octeto = int(mac.split(":")[0],16)
+        primer_octeto = int(mac.split(":")[0],16) #convierte la cadena en ["7c", "10", "c9", "45", "6b", "65"] y luego indica en que base(16)
     except (ValueError, IndexError):
         return False
     return bool(primer_octeto & 0b10)

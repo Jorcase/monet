@@ -40,10 +40,9 @@ def persist_scan_results(analisis: AnalisisRed, hosts: list[dict]) -> dict:
         if not mac:
             continue  
 
-        dispositivo = None
+        dispositivo = Dispositivo.objects.filter(mac=mac).first() if mac else None
 
-        if mac_random:
-
+        if mac_random and not dispositivo:
             if hostname:
                 dispositivo = Dispositivo.objects.filter(
                     mac_aleatoria=True,
@@ -56,8 +55,6 @@ def persist_scan_results(analisis: AnalisisRed, hosts: list[dict]) -> dict:
                     .order_by("-ultima_vez")
                     .first()
                 )
-        else:
-            dispositivo = Dispositivo.objects.filter(mac=mac).first()
 
         if dispositivo:
             anterior_ultima_vez = dispositivo.ultima_vez
