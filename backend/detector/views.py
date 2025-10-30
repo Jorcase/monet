@@ -103,10 +103,23 @@ def detector_status(request):
 
 def detector_devices(request):
     dispositivos = Dispositivo.objects.order_by("-ultima_vez")
-    historiales = (
+    historiales_queryset = (
         DispositivoHistorial.objects.select_related("dispositivo")
-        .order_by("-inicio")[:100]
+        .order_by("-inicio")
     )
+
+    historiales = []
+    ultima_ip_por_dispositivo = {}
+
+    for hist in historiales_queryset:
+        disp = hist.dispositivo
+        last_ip = ultima_ip_por_dispositivo.get(disp.id)
+        if last_ip is None:
+            last_ip = disp.ip
+        hist.ip_actual_flag = last_ip
+        ultima_ip_por_dispositivo[disp.id] = hist.ip
+        historiales.append(hist)
+
     contexto = {
         "dispositivos": dispositivos,
         "historiales": historiales,
