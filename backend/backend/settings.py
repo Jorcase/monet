@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'agente',
     'detector',
+    'escaner',
 ]
 
 MIDDLEWARE = [

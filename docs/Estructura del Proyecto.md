@@ -99,6 +99,7 @@ inicio (timestamp) |
 fin (timestamp) |
 notas (text)
 	
+	
 # captura
 id |
 analisis-id (FK -> analisis-red) |

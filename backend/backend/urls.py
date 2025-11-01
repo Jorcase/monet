@@ -19,6 +19,7 @@ from django.urls import path
 
 from agente.views import agente_status
 from detector.views import detector_status, detector_devices, detector_analyses, detector_hosts
+from escaner.views import scanner_dashboard
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -28,4 +29,5 @@ urlpatterns = [
     path("dispositivos/", detector_devices, name="detector_dispositivos"),
     path("hosts/", detector_hosts, name="detector_hosts"),
     path("analisis/", detector_analyses, name="detector_analisis"),
+    path("escaner/", scanner_dashboard, name="scanner_dashboard"),
 ]

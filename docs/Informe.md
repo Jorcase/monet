@@ -80,3 +80,11 @@ Se agrego en models de dispostivo el campo vendor, capaz de detectar con los pri
 vistas creadas para primera presentacion del backend local generadas con ia para ahorrar tiempo por el momento utilizando solamente html y css
 # Anotaciones 301025 - segundo modulo
 Cambio en la logica de registro de mac aleatoria para registrar dispositivos, la mac aleatoria solo cambia si se borra la red y se vuelve a registrar ahi genera otra mac aleatoria, mientras sigue siendo constante asique tiene logica seguir actualizando el mismo dispositivo con la mac aleatoria por mas de que sea aleatoria.
+vistas y front para el modulo de detector, y tablas relacionadas al mismo, historial, dispositivos y el modulo en si.
+# version 2 de modulo detector, escaner rapido y escaner exhaustivo
+existe una herrapienta llamada arp-scan que hace lo mismo que este modulo
+# Anotaciones 311025 - tercer modulo (escaneo)
+Planeamiento del modulo de escaneo de puertos
+Creacion de models, services: port_scan y persistence, scanner, sirven para ejecutar el escaneo dependiendo las opciones propuestas para la primera version, tanto como para una ip, un grupo de ips, dispostivios activos con respecto a analisis recientes
+Creacion del command para manejar con el manage.py
+# Anotaciones 11125 - tercer modulo

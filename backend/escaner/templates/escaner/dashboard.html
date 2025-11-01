@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Escáner de puertos · MONET{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Escáner de puertos</h1>
+    <p class="note">Definí los objetivos del escaneo y el modo. Podés combinar varias fuentes de IP.</p>
+
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="alert {{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="post" class="scan-form">
+        {% csrf_token %}
+        <div class="grid two" style="gap: 1rem;">
+            <section>
+                <h2>Configuración</h2>
+
+                <label for="ips_manual">IP o rango manual</label>
+                <textarea id="ips_manual" name="ips_manual" rows="4" placeholder="Ej.: 192.168.0.10 192.168.0.11/32"></textarea>
+                <p class="note">Separá múltiples objetivos con espacios, comas o saltos de línea.</p>
+
+                <label for="tipo_scan">Tipo de escaneo</label>
+                <select id="tipo_scan" name="tipo_scan">
+                    {% for value, label in tipos_scan %}
+                        <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+
+                <div class="checkbox-group" style="margin: 0.8rem 0;">
+                    <label><input type="checkbox" name="scan_local"> Incluir este host (localhost)</label>
+                    <label><input type="checkbox" name="scan_all"> Todos los dispositivos activos</label>
+                </div>
+
+                <label for="analisis_id">Usar hosts de un análisis previo</label>
+                <select id="analisis_id" name="analisis_id">
+                    <option value="">-- Ninguno --</option>
+                    {% for analisis in analisis_recientes %}
+                        <option value="{{ analisis.id }}">
+                            {{ analisis.inicio|date:"Y-m-d H:i" }} · {{ analisis.get_tipo_display }} ({{ analisis.total_hosts_detectados }} hosts)
+                        </option>
+                    {% endfor %}
+                </select>
+                <p class="note">Si seleccionás un análisis, se agregarán todas las IP detectadas en esa ejecución.</p>
+
+                <button type="submit" style="margin-top: 1rem;">Ejecutar escaneo</button>
+            </section>
+
+            <section>
+                <h2>Dispositivos activos</h2>
+                <p class="note">Seleccioná dispositivos específicos si no marcás “todos los dispositivos activos”.</p>
+
+                <div class="table-wrapper" style="max-height: 220px; overflow-y: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>Hostname</th>
+                                <th>IP</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for dispositivo in dispositivos_activos %}
+                                <tr>
+                                    <td><input type="checkbox" name="dispositivos" value="{{ dispositivo.id }}"></td>
+                                    <td>{{ dispositivo.hostname|default:"-" }}</td>
+                                    <td>{{ dispositivo.ip }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="3" class="empty">No hay dispositivos activos registrados.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </form>
+</div>
+
+<div class="card" style="margin-top: 2rem;">
+    <h2 class="section-title">Trabajos recientes</h2>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Inicio</th>
+                    <th>Fin</th>
+                    <th>Tipo</th>
+                    <th>Estado</th>
+                    <th>Objetivo</th>
+                    <th>Resumen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for trabajo in trabajos %}
+                    <tr>
+                        <td>{{ trabajo.id }}</td>
+                        <td>{{ trabajo.inicio }}</td>
+                        <td>{{ trabajo.fin|default:"-" }}</td>
+                        <td>{{ trabajo.get_tipo_scan_display }}</td>
+                        <td>{{ trabajo.get_estado_display }}</td>
+                        <td>{{ trabajo.objetivo }}</td>
+                        <td>{{ trabajo.notas|default:"-" }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="7">
+                            {% with puertos=trabajo.puertos.all %}
+                                {% if puertos %}
+                                    <div class="table-wrapper" style="margin-top: 0.6rem;">
+                                        <table>
+                                            <thead>
+                                                <tr>
+                                                    <th>Host</th>
+                                                    <th>Puerto</th>
+                                                    <th>Protocolo</th>
+                                                    <th>Servicio</th>
+                                                    <th>Detectado</th>
+                                                    <th>Estado</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for puerto in puertos %}
+                                                    <tr>
+                                                        <td>
+                                                            {% firstof puerto.dispositivo.ip puerto.host_detectado.ip puerto.trabajo.objetivo "-" %}
+                                                        </td>
+                                                        <td>{{ puerto.puerto }}</td>
+                                                        <td>{{ puerto.protocolo|upper }}</td>
+                                                        <td>{{ puerto.servicio|default:"-" }}</td>
+                                                        <td>{{ puerto.detected_at }}</td>
+                                                        <td>{{ puerto.get_estado_display }}</td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                {% else %}
+                                    <p class="note">No se encontraron puertos abiertos.</p>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="7" class="empty">Todavía no se registraron trabajos.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

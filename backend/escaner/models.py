@@ -1,3 +1,69 @@
 from django.db import models
+from django.utils import timezone
 
-# Create your models here.
+
+class TrabajoScanner(models.Model):
+
+    TIPO_CHOICES = [
+        ("rapido", "Rapido (top ports)"),
+        ("tcp-completo", "TCP completo"),
+        ("tcp-1000", "TCP primeros 1000"),
+    ]
+
+    ESTADO_CHOICES = [
+        ("pendiente", "Pendiente"),
+        ("ejecutando", "Ejecutando"),
+        ("completado", "Completado"),
+        ("error", "Error"),
+    ]
+
+    analisis = models.ForeignKey("detector.AnalisisRed", on_delete=models.CASCADE, related_name="trabajos_scanner")
+    objetivo = models.CharField(max_length=255)
+    tipo_scan = models.CharField(max_length=32, choices=TIPO_CHOICES)
+    estado = models.CharField(max_length=16, choices=ESTADO_CHOICES, default="pendiente")
+    inicio = models.DateTimeField(default=timezone.now)
+    fin = models.DateTimeField(null=True, blank=True)
+    notas = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "trabajo_scanner"
+        verbose_name = "Trabajo de escaner"
+        verbose_name_plural = "Trabajos de escaner"
+
+    def __str__(self) -> str:
+        return f"{self.objetivo} ({self.get_tipo_scan_display()})"
+
+
+class PuertoEncontrado(models.Model):
+
+    PROTO_CHOICES = [
+        ("tcp", "TCP"),
+        ("udp", "UDP"),
+    ]
+
+    ESTADO_CHOICES = [
+        ("abierto", "Abierto"),
+        ("filtrado", "Filtrado"),
+        ("cerrado", "Cerrado"),
+    ]
+
+    trabajo = models.ForeignKey(TrabajoScanner, on_delete=models.CASCADE, related_name="puertos")
+    analisis = models.ForeignKey("detector.AnalisisRed", on_delete=models.CASCADE, related_name="puertos")
+    host_detectado = models.ForeignKey("detector.HostDetectado", on_delete=models.SET_NULL, null=True, blank=True, related_name="puertos")
+    dispositivo = models.ForeignKey("detector.Dispositivo", on_delete=models.SET_NULL, null=True, blank=True, related_name="puertos")
+    puerto = models.PositiveIntegerField()
+    protocolo = models.CharField(max_length=8, choices=PROTO_CHOICES)
+    servicio = models.CharField(max_length=255, blank=True)
+    estado = models.CharField(max_length=16, choices=ESTADO_CHOICES)
+    detected_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "puerto_encontrado"
+        verbose_name = "Puerto encontrado"
+        verbose_name_plural = "Puertos encontrados"
+        indexes = [
+            models.Index(fields=["puerto", "protocolo"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.puerto}/{self.protocolo} ({self.estado})"
