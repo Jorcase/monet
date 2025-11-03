@@ -22,7 +22,7 @@ class TrabajoScannerAdmin(admin.ModelAdmin):
 
 @admin.register(PuertoEncontrado)
 class PuertoEncontradoAdmin(admin.ModelAdmin):
-    list_display = ("puerto", "protocolo", "estado", "dispositivo", "host_detectado", "trabajo", "detected_at")
+    list_display = ("puerto", "protocolo", "estado", "host_ip","dispositivo", "host_detectado", "trabajo", "detected_at")
     list_filter = ("protocolo", "estado")
     search_fields = ("puerto", "servicio", "trabajo__objetivo", "dispositivo__ip", "host_detectado__ip")
     autocomplete_fields = ("trabajo", "dispositivo", "host_detectado", "analisis")

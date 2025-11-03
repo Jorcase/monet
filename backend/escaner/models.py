@@ -5,9 +5,10 @@ from django.utils import timezone
 class TrabajoScanner(models.Model):
 
     TIPO_CHOICES = [
-        ("rapido", "Rapido (top ports)"),
+        ("rapido", "Rápido (top ports)"),
         ("tcp-completo", "TCP completo"),
         ("tcp-1000", "TCP primeros 1000"),
+        ("personalizado", "Personalizado"),
     ]
 
     ESTADO_CHOICES = [
@@ -17,7 +18,7 @@ class TrabajoScanner(models.Model):
         ("error", "Error"),
     ]
 
-    analisis = models.ForeignKey("detector.AnalisisRed", on_delete=models.CASCADE, related_name="trabajos_scanner")
+    analisis = models.ForeignKey("detector.AnalisisRed", on_delete=models.SET_NULL, null=True, blank=True, related_name="trabajos_scanner")
     objetivo = models.CharField(max_length=255)
     tipo_scan = models.CharField(max_length=32, choices=TIPO_CHOICES)
     estado = models.CharField(max_length=16, choices=ESTADO_CHOICES, default="pendiente")
@@ -48,9 +49,10 @@ class PuertoEncontrado(models.Model):
     ]
 
     trabajo = models.ForeignKey(TrabajoScanner, on_delete=models.CASCADE, related_name="puertos")
-    analisis = models.ForeignKey("detector.AnalisisRed", on_delete=models.CASCADE, related_name="puertos")
+    analisis = models.ForeignKey("detector.AnalisisRed", on_delete=models.SET_NULL, null=True, blank=True, related_name="puertos")
     host_detectado = models.ForeignKey("detector.HostDetectado", on_delete=models.SET_NULL, null=True, blank=True, related_name="puertos")
     dispositivo = models.ForeignKey("detector.Dispositivo", on_delete=models.SET_NULL, null=True, blank=True, related_name="puertos")
+    host_ip = models.GenericIPAddressField(null=True, blank=True)
     puerto = models.PositiveIntegerField()
     protocolo = models.CharField(max_length=8, choices=PROTO_CHOICES)
     servicio = models.CharField(max_length=255, blank=True)

@@ -17,140 +17,214 @@
 
     <form method="post" class="scan-form">
         {% csrf_token %}
-        <div class="grid two" style="gap: 1rem;">
-            <section>
-                <h2>Configuración</h2>
+        <div class="scan-grid">
+            <div class="scan-left">
+                <div class="scan-choice">
+                    <input class="scan-radio" type="radio" id="modo-manual" name="modo_objetivo" value="manual" {% if modo_actual == 'manual' %}checked{% endif %}>
+                    <label class="scan-label" for="modo-manual">
+                        <span class="scan-title">Escanear direcciones manuales</span>
+                        <span class="scan-icon" aria-hidden="true">▸</span>
+                    </label>
+                    <div class="box-body">
+                        <p class="note">Ingresá una o varias IP (opcional). Podés incluir el host local.</p>
+                        <label for="ips_manual" class="field-label">Direcciones IP</label>
+                        <textarea id="ips_manual" name="ips_manual" rows="6" placeholder="Ej.: 192.168.0.10&#10;192.168.0.11">{{ ips_manual_valor|default_if_none:"" }}</textarea>
+                        <label class="inline">
+                            <input type="checkbox" name="scan_local" value="1" {% if scan_local_checked %}checked{% endif %}>
+                            Incluir host local (127.0.0.1)
+                        </label>
+                    </div>
+                </div>
+            </div>
 
-                <label for="ips_manual">IP o rango manual</label>
-                <textarea id="ips_manual" name="ips_manual" rows="4" placeholder="Ej.: 192.168.0.10 192.168.0.11/32"></textarea>
-                <p class="note">Separá múltiples objetivos con espacios, comas o saltos de línea.</p>
+            <div class="scan-right">
+                <div class="scan-block">
+                    <div class="scan-choice">
+                        <input class="scan-radio" type="radio" id="modo-dispositivos" name="modo_objetivo" value="dispositivos" {% if modo_actual == 'dispositivos' %}checked{% endif %}>
+                        <label class="scan-label" for="modo-dispositivos">
+                            <span class="scan-title">Dispositivos activos disponibles</span>
+                            <span class="scan-icon" aria-hidden="true">▸</span>
+                        </label>
+                        <div class="box-body">
+                            <p class="note">Última detección menor a {{ umbral_minutos }} minutos.</p>
+                            <div class="table-wrapper compact" style="max-height: 180px;">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th></th>
+                                            <th>IP</th>
+                                            <th>MAC</th>
+                                            <th>Vendor</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for dispositivo in dispositivos_activos %}
+                                            <tr>
+                                                <td>
+                                                    <input type="checkbox" name="dispositivos" value="{{ dispositivo.id }}" {% if dispositivo.id|stringformat:'s' in dispositivos_seleccionados %}checked{% endif %}>
+                                                </td>
+                                                <td>{{ dispositivo.ip }}</td>
+                                                <td>{{ dispositivo.mac }}</td>
+                                                <td>{{ dispositivo.vendor|default:"-" }}</td>
+                                            </tr>
+                                        {% empty %}
+                                            <tr><td colspan="4" class="empty">No hay dispositivos activos recientes.</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
+                <div class="scan-block">
+                    <div class="scan-choice">
+                        <input class="scan-radio" type="radio" id="modo-analisis" name="modo_objetivo" value="analisis" {% if modo_actual == 'analisis' %}checked{% endif %}>
+                        <label class="scan-label" for="modo-analisis">
+                            <span class="scan-title">Análisis recientes</span>
+                            <span class="scan-icon" aria-hidden="true">▸</span>
+                        </label>
+                        <div class="box-body">
+                            <p class="note">Reutilizá los hosts detectados en una ejecución previa.</p>
+                            <div class="table-wrapper compact" style="max-height: 180px;">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th></th>
+                                            <th>Análisis</th>
+                                            <th>ID</th>
+                                            <th>Horario</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for analisis in analisis_recientes %}
+                                            <tr>
+                                                <td>
+                                                    <input type="radio" name="analisis_id" value="{{ analisis.id }}" {% if analisis_seleccionado and analisis.id|stringformat:'s' == analisis_seleccionado %}checked{% endif %}>
+                                                </td>
+                                                <td>{{ analisis.get_tipo_display }}</td>
+                                                <td>{{ analisis.id }}</td>
+                                                <td>{{ analisis.inicio|date:"Y-m-d H:i" }}</td>
+                                            </tr>
+                                        {% empty %}
+                                            <tr><td colspan="4" class="empty">No hay análisis recientes disponibles.</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="scan-footer">
+            <div class="footer-select">
                 <label for="tipo_scan">Tipo de escaneo</label>
                 <select id="tipo_scan" name="tipo_scan">
                     {% for value, label in tipos_scan %}
-                        <option value="{{ value }}">{{ label }}</option>
+                        <option value="{{ value }}" {% if tipo_scan_seleccionado == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
-
-                <div class="checkbox-group" style="margin: 0.8rem 0;">
-                    <label><input type="checkbox" name="scan_local"> Incluir este host (localhost)</label>
-                    <label><input type="checkbox" name="scan_all"> Todos los dispositivos activos</label>
-                </div>
-
-                <label for="analisis_id">Usar hosts de un análisis previo</label>
-                <select id="analisis_id" name="analisis_id">
-                    <option value="">-- Ninguno --</option>
-                    {% for analisis in analisis_recientes %}
-                        <option value="{{ analisis.id }}">
-                            {{ analisis.inicio|date:"Y-m-d H:i" }} · {{ analisis.get_tipo_display }} ({{ analisis.total_hosts_detectados }} hosts)
-                        </option>
-                    {% endfor %}
-                </select>
-                <p class="note">Si seleccionás un análisis, se agregarán todas las IP detectadas en esa ejecución.</p>
-
-                <button type="submit" style="margin-top: 1rem;">Ejecutar escaneo</button>
-            </section>
-
-            <section>
-                <h2>Dispositivos activos</h2>
-                <p class="note">Seleccioná dispositivos específicos si no marcás “todos los dispositivos activos”.</p>
-
-                <div class="table-wrapper" style="max-height: 220px; overflow-y: auto;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th></th>
-                                <th>Hostname</th>
-                                <th>IP</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for dispositivo in dispositivos_activos %}
-                                <tr>
-                                    <td><input type="checkbox" name="dispositivos" value="{{ dispositivo.id }}"></td>
-                                    <td>{{ dispositivo.hostname|default:"-" }}</td>
-                                    <td>{{ dispositivo.ip }}</td>
-                                </tr>
-                            {% empty %}
-                                <tr><td colspan="3" class="empty">No hay dispositivos activos registrados.</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+            </div>
+            <div class="custom-ports {% if tipo_scan_seleccionado == 'personalizado' %}show{% endif %}">
+                <label for="puertos_personalizados">Puertos personalizados</label>
+                <input type="text" id="puertos_personalizados" name="puertos_personalizados" value="{{ puertos_personalizados }}" placeholder="Ej.: 22,80,443 8000-8100">
+                <p class="note">Separá con comas o espacios. Podés usar rangos con guion (ej. 8000-8100).</p>
+            </div>
+            <button type="submit" class="scan-submit">Ejecutar escaneo</button>
         </div>
     </form>
 </div>
 
 <div class="card" style="margin-top: 2rem;">
     <h2 class="section-title">Trabajos recientes</h2>
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Inicio</th>
-                    <th>Fin</th>
-                    <th>Tipo</th>
-                    <th>Estado</th>
-                    <th>Objetivo</th>
-                    <th>Resumen</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for trabajo in trabajos %}
-                    <tr>
-                        <td>{{ trabajo.id }}</td>
-                        <td>{{ trabajo.inicio }}</td>
-                        <td>{{ trabajo.fin|default:"-" }}</td>
-                        <td>{{ trabajo.get_tipo_scan_display }}</td>
-                        <td>{{ trabajo.get_estado_display }}</td>
-                        <td>{{ trabajo.objetivo }}</td>
-                        <td>{{ trabajo.notas|default:"-" }}</td>
-                    </tr>
-                    <tr>
-                        <td colspan="7">
-                            {% with puertos=trabajo.puertos.all %}
-                                {% if puertos %}
-                                    <div class="table-wrapper" style="margin-top: 0.6rem;">
-                                        <table>
-                                            <thead>
-                                                <tr>
-                                                    <th>Host</th>
-                                                    <th>Puerto</th>
-                                                    <th>Protocolo</th>
-                                                    <th>Servicio</th>
-                                                    <th>Detectado</th>
-                                                    <th>Estado</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {% for puerto in puertos %}
-                                                    <tr>
-                                                        <td>
-                                                            {% firstof puerto.dispositivo.ip puerto.host_detectado.ip puerto.trabajo.objetivo "-" %}
-                                                        </td>
-                                                        <td>{{ puerto.puerto }}</td>
-                                                        <td>{{ puerto.protocolo|upper }}</td>
-                                                        <td>{{ puerto.servicio|default:"-" }}</td>
-                                                        <td>{{ puerto.detected_at }}</td>
-                                                        <td>{{ puerto.get_estado_display }}</td>
-                                                    </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                {% else %}
-                                    <p class="note">No se encontraron puertos abiertos.</p>
-                                {% endif %}
-                            {% endwith %}
-                        </td>
-                    </tr>
-                {% empty %}
-                    <tr><td colspan="7" class="empty">Todavía no se registraron trabajos.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    {% if trabajos %}
+        <div class="work-list">
+            {% for trabajo in trabajos %}
+                <details class="work-item">
+                    <summary>
+                        <span class="work-id">#{{ trabajo.id }}</span>
+                        <span>{{ trabajo.inicio }}</span>
+                        <span>{{ trabajo.get_tipo_scan_display }}</span>
+                        <span>{{ trabajo.get_estado_display }}</span>
+                        <span class="work-target">{{ trabajo.objetivo }}</span>
+                        <span class="work-notes">{{ trabajo.notas|default:"A: 0 / C: 0 / F: 0" }}</span>
+                        <span class="work-action" aria-hidden="true"></span>
+                    </summary>
+                    {% with puertos=trabajo.puertos.all %}
+                        {% if puertos %}
+                            <div class="table-wrapper" style="margin-top: 0.6rem;">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Host</th>
+                                            <th>Puerto</th>
+                                            <th>Protocolo</th>
+                                            <th>Servicio</th>
+                                            <th>Detectado</th>
+                                            <th>Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for puerto in puertos %}
+                                            <tr>
+                                                <td>{% firstof puerto.host_ip puerto.dispositivo.ip puerto.host_detectado.ip "-" %}</td>
+                                                <td>{{ puerto.puerto }}</td>
+                                                <td>{{ puerto.protocolo|upper }}</td>
+                                                <td>{{ puerto.servicio|default:"-" }}</td>
+                                                <td>{{ puerto.detected_at }}</td>
+                                                <td>{{ puerto.get_estado_display }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="note">No se encontraron puertos abiertos.</p>
+                        {% endif %}
+                    {% endwith %}
+                </details>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="empty">Todavía no se registraron trabajos.</p>
+    {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.querySelector(".scan-form");
+    const submitBtn = form?.querySelector(".scan-submit");
+    const tipoSelect = document.getElementById("tipo_scan");
+    const customPorts = document.querySelector(".custom-ports");
+
+    const syncCustomPorts = () => {
+        if (!tipoSelect || !customPorts) {
+            return;
+        }
+        if (tipoSelect.value === "personalizado") {
+            customPorts.classList.add("show");
+        } else {
+            customPorts.classList.remove("show");
+        }
+    };
+
+    if (tipoSelect) {
+        tipoSelect.addEventListener("change", syncCustomPorts);
+        syncCustomPorts();
+    }
+
+    if (form && submitBtn) {
+        form.addEventListener("submit", function () {
+            if (!submitBtn.disabled) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = "Escaneando...";
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

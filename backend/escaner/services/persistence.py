@@ -16,7 +16,9 @@ def guardar_resultados(
     cerrados = resumen_estados.get("cerrado",0)
     filtrados = resumen_estados.get("filtrado",0)
 
-    trabajo.notas = f"A: {abiertos} / C: {cerrados} / F: {filtrados}"
+    nota_previa = (trabajo.notas or "").strip()
+    resumen_texto = f"A: {abiertos} / C: {cerrados} / F: {filtrados}"
+    trabajo.notas = f"{nota_previa} · {resumen_texto}" if nota_previa else resumen_texto
     trabajo.fin = timezone.now()
     trabajo.estado = "completado"
     trabajo.save(update_fields=["notas","fin","estado"])
@@ -24,13 +26,16 @@ def guardar_resultados(
     for entry in resultados:
         host_ip = entry["host"]
         dispositivo = Dispositivo.objects.filter(ip=host_ip).first()
-        host_detectado = HostDetectado.objects.filter(analisis = trabajo.analisis, ip=host_ip).first()
+        host_detectado = None
+        if trabajo.analisis_id:
+            host_detectado = HostDetectado.objects.filter(analisis=trabajo.analisis, ip=host_ip).first()
 
         PuertoEncontrado.objects.create(
             trabajo=trabajo,
             analisis=trabajo.analisis,
             host_detectado=host_detectado,
             dispositivo=dispositivo,
+            host_ip=host_ip,
             puerto=entry["puerto"],
             protocolo=entry["protocolo"],
             servicio=entry["servicio"],
