@@ -14,20 +14,28 @@
     <div class="table-wrapper">
         <table>
             <thead>
-                <tr>
-                    <th>Dispositivo</th>
-                    <th>IP</th>
-                    <th>Puerto</th>
-                    <th>Protocolo</th>
-                    <th>Servicio</th>
-                    <th>Estado</th>
-                    <th>Primera vez</th>
-                    <th>Última vez</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for puerto in puertos_resumen %}
                     <tr>
+                        <th>MAC</th>
+                        <th>Hostname</th>
+                        <th>IP</th>
+                        <th>Puerto</th>
+                        <th>Protocolo</th>
+                        <th>Servicio</th>
+                        <th>Estado</th>
+                        <th>Primera vez</th>
+                        <th>Última vez</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for puerto in puertos_resumen %}
+                    <tr>
+                        <td>
+                            {% if puerto.dispositivo %}
+                                {{ puerto.dispositivo.mac }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
                         <td>{{ puerto.dispositivo.hostname|default:"-" }}</td>
                         <td>{{ puerto.host_ip }}</td>
                         <td>{{ puerto.puerto }}</td>

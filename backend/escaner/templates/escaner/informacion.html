@@ -99,7 +99,8 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Dispositivo</th>
+                        <th>MAC</th>
+                        <th>Hostname</th>
                         <th>IP</th>
                         <th>Puerto</th>
                         <th>Protocolo</th>
@@ -112,6 +113,7 @@
                 <tbody>
                     {% for puerto in resumen %}
                         <tr>
+                            <td>{% if puerto.dispositivo %}{{ puerto.dispositivo.mac }}{% else %}-{% endif %}</td>
                             <td>{{ puerto.dispositivo.hostname|default:"-" }}</td>
                             <td>{{ puerto.host_ip }}</td>
                             <td>{{ puerto.puerto }}</td>
