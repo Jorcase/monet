@@ -41,3 +41,11 @@ def agente_status(request):
         contexto["error"] = error
 
     return render(request, "agente/status.html", contexto)
+
+
+def agente_historial(request):
+    agentes = AgenteLocal.objects.order_by("-ultima_actualizacion")
+    contexto = {
+        "agentes": agentes,
+    }
+    return render(request, "agente/historial.html", contexto)

@@ -69,3 +69,29 @@ class PuertoEncontrado(models.Model):
 
     def __str__(self) -> str:
         return f"{self.puerto}/{self.protocolo} ({self.estado})"
+
+
+class PuertoResumen(models.Model):
+    """Estado consolidado de puertos observados por host/dispositivo."""
+
+    dispositivo = models.ForeignKey("detector.Dispositivo", on_delete=models.SET_NULL, null=True, blank=True, related_name="puertos_resumen")
+    host_ip = models.GenericIPAddressField()
+    puerto = models.PositiveIntegerField()
+    protocolo = models.CharField(max_length=8, choices=PuertoEncontrado.PROTO_CHOICES)
+    servicio = models.CharField(max_length=255, blank=True)
+    estado = models.CharField(max_length=16, choices=PuertoEncontrado.ESTADO_CHOICES)
+    primera_detectado = models.DateTimeField(default=timezone.now)
+    ultima_detectado = models.DateTimeField(default=timezone.now)
+    ultima_trabajo = models.ForeignKey(TrabajoScanner, on_delete=models.SET_NULL, null=True, blank=True, related_name="puertos_resumen")
+
+    class Meta:
+        db_table = "puerto_resumen"
+        verbose_name = "Puerto resumido"
+        verbose_name_plural = "Puertos resumidos"
+        indexes = [
+            models.Index(fields=["host_ip", "puerto", "protocolo"], name="puerto_resumen_host_ip_idx"),
+        ]
+
+    def __str__(self) -> str:
+        etiqueta = self.dispositivo.hostname if self.dispositivo and self.dispositivo.hostname else self.host_ip
+        return f"{etiqueta} :: {self.puerto}/{self.protocolo} ({self.estado})"

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Puertos encontrados · MONET{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Historial de puertos encontrados</h1>
+    <p class="note">Registros individuales generados en cada ejecución del escáner.</p>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Trabajo</th>
+                    <th>Host</th>
+                    <th>Puerto</th>
+                    <th>Protocolo</th>
+                    <th>Servicio</th>
+                    <th>Estado</th>
+                    <th>Detectado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for puerto in puertos %}
+                    <tr>
+                        <td>#{{ puerto.trabajo_id }}</td>
+                        <td>{{ puerto.host_ip|default:puerto.trabajo.objetivo }}</td>
+                        <td>{{ puerto.puerto }}</td>
+                        <td>{{ puerto.protocolo|upper }}</td>
+                        <td>{{ puerto.servicio|default:"-" }}</td>
+                        <td>{{ puerto.get_estado_display }}</td>
+                        <td>{{ puerto.detected_at }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="7" class="empty">Todavía no se registraron resultados.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

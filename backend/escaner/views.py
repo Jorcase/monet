@@ -6,11 +6,12 @@ from datetime import timedelta
 from django.contrib import messages
 from django.shortcuts import redirect, render
 from django.utils import timezone
+from django.db import OperationalError
 
 from django.db.models import Q
 
 from detector.models import AnalisisRed, Dispositivo, HostDetectado
-from escaner.models import TrabajoScanner
+from escaner.models import TrabajoScanner, PuertoEncontrado, PuertoResumen
 from escaner.services.scanner import ejecutar_trabajo
 from escaner.services.port_scan import normalize_port_list
 
@@ -172,3 +173,62 @@ def scanner_dashboard(request):
         "puertos_personalizados": puertos_personalizados,
     }
     return render(request, "escaner/dashboard.html", contexto)
+
+
+def puertos_encontrados_view(request):
+    puertos = (
+        PuertoEncontrado.objects.select_related("trabajo", "dispositivo")
+        .order_by("-detected_at")[:500]
+    )
+    return render(
+        request,
+        "escaner/puertos_encontrados.html",
+        {"puertos": puertos},
+    )
+
+
+def puertos_resumen_view(request):
+    error = None
+    try:
+        puertos_resumen = (
+            PuertoResumen.objects.select_related("dispositivo")
+            .order_by("dispositivo__hostname", "host_ip", "puerto")
+        )
+    except OperationalError:
+        puertos_resumen = []
+        error = "La tabla de resumen no existe. Ejecutá 'python manage.py migrate escaner'."
+    return render(
+        request,
+        "escaner/puertos_resumen.html",
+        {"puertos_resumen": puertos_resumen, "error": error},
+    )
+
+
+def escaner_overview(request):
+    trabajos = (
+        TrabajoScanner.objects.prefetch_related("puertos")
+        .order_by("-inicio")[:10]
+    )
+
+    puertos = (
+        PuertoEncontrado.objects.select_related("trabajo", "dispositivo")
+        .order_by("-detected_at")[:50]
+    )
+
+    resumen = []
+    resumen_error = None
+    try:
+        resumen = (
+            PuertoResumen.objects.select_related("dispositivo")
+            .order_by("dispositivo__hostname", "host_ip", "puerto")
+        )
+    except OperationalError:
+        resumen_error = "La tabla de resumen no existe. Ejecutá 'python manage.py migrate escaner'."
+
+    contexto = {
+        "trabajos": trabajos,
+        "puertos": puertos,
+        "resumen": resumen,
+        "resumen_error": resumen_error,
+    }
+    return render(request, "escaner/informacion.html", contexto)

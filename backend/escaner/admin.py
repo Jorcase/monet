@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from escaner.models import TrabajoScanner, PuertoEncontrado
+from escaner.models import TrabajoScanner, PuertoEncontrado, PuertoResumen
 
 
 class PuertoEncontradoInline(admin.TabularInline):
@@ -27,3 +27,11 @@ class PuertoEncontradoAdmin(admin.ModelAdmin):
     search_fields = ("puerto", "servicio", "trabajo__objetivo", "dispositivo__ip", "host_detectado__ip")
     autocomplete_fields = ("trabajo", "dispositivo", "host_detectado", "analisis")
     readonly_fields = ("detected_at",)
+
+
+@admin.register(PuertoResumen)
+class PuertoResumenAdmin(admin.ModelAdmin):
+    list_display = ("host_ip", "puerto", "protocolo", "estado", "primera_detectado", "ultima_detectado", "dispositivo")
+    list_filter = ("estado", "protocolo")
+    search_fields = ("host_ip", "dispositivo__ip", "dispositivo__hostname")
+    autocomplete_fields = ("dispositivo", "ultima_trabajo")

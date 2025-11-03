@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Puertos por dispositivo · MONET{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Puertos por dispositivo</h1>
+    <p class="note">Resumen de los puertos más recientes detectados para cada host.</p>
+
+    {% if error %}
+        <div class="alert error">{{ error }}</div>
+    {% endif %}
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Dispositivo</th>
+                    <th>IP</th>
+                    <th>Puerto</th>
+                    <th>Protocolo</th>
+                    <th>Servicio</th>
+                    <th>Estado</th>
+                    <th>Primera vez</th>
+                    <th>Última vez</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for puerto in puertos_resumen %}
+                    <tr>
+                        <td>{{ puerto.dispositivo.hostname|default:"-" }}</td>
+                        <td>{{ puerto.host_ip }}</td>
+                        <td>{{ puerto.puerto }}</td>
+                        <td>{{ puerto.protocolo|upper }}</td>
+                        <td>{{ puerto.servicio|default:"-" }}</td>
+                        <td>{{ puerto.get_estado_display }}</td>
+                        <td>{{ puerto.primera_detectado }}</td>
+                        <td>{{ puerto.ultima_detectado }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="8" class="empty">Todavía no hay puertos registrados.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

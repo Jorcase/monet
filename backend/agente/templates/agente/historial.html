@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Historial del agente · MONET{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Historial del agente local</h1>
+    <p class="note">Listado de registros del agente con la última información recopilada.</p>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Hostname</th>
+                    <th>IP</th>
+                    <th>Interfaz</th>
+                    <th>MAC</th>
+                    <th>Última actualización</th>
+                    <th>Notas</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for agente in agentes %}
+                    <tr>
+                        <td>{{ agente.hostname }}</td>
+                        <td>{{ agente.ip_local }}/{{ agente.cidr }}</td>
+                        <td>{{ agente.interfaz }}</td>
+                        <td>{{ agente.mac }}</td>
+                        <td>{{ agente.ultima_actualizacion }}</td>
+                        <td>{{ agente.notas|default:"-" }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="6" class="empty">Aún no se registró ningún agente.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

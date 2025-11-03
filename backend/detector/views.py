@@ -158,3 +158,35 @@ def detector_hosts(request):
         "hosts": hosts,
     }
     return render(request, "detector/hosts_detectados.html", contexto)
+
+
+def detector_overview(request):
+    analisis = AnalisisRed.objects.order_by("-inicio")[:10]
+    for item in analisis:
+        item.hosts_cache = _build_hosts_cache(item)
+
+    dispositivos = Dispositivo.objects.order_by("-ultima_vez")[:20]
+
+    historiales_queryset = (
+        DispositivoHistorial.objects.select_related("dispositivo")
+        .order_by("-inicio")[:50]
+    )
+    historiales = []
+    ultima_ip_por_dispositivo = {}
+    for hist in historiales_queryset:
+        disp = hist.dispositivo
+        last_ip = ultima_ip_por_dispositivo.get(disp.id) if disp else None
+        hist.ip_actual_flag = last_ip or (disp.ip if disp else "-")
+        if disp:
+            ultima_ip_por_dispositivo[disp.id] = hist.ip
+        historiales.append(hist)
+
+    hosts = [_enrich_host(host) for host in HostDetectado.objects.order_by("-ultima_vista")[:50]]
+
+    contexto = {
+        "analisis": analisis,
+        "dispositivos": dispositivos,
+        "historiales": historiales,
+        "hosts": hosts,
+    }
+    return render(request, "detector/informacion.html", contexto)

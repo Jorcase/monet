@@ -3,7 +3,7 @@ from typing import Sequence
 from django.db import transaction
 from django.utils import timezone
 
-from escaner.models import TrabajoScanner, PuertoEncontrado
+from escaner.models import TrabajoScanner, PuertoEncontrado, PuertoResumen
 from detector.models import HostDetectado, Dispositivo
 
 @transaction.atomic
@@ -41,3 +41,30 @@ def guardar_resultados(
             servicio=entry["servicio"],
             estado=entry["estado"],
         )
+
+        resumen = PuertoResumen.objects.filter(
+            dispositivo=dispositivo,
+            host_ip=host_ip,
+            puerto=entry["puerto"],
+            protocolo=entry["protocolo"],
+        ).first()
+
+        if resumen is None:
+            PuertoResumen.objects.create(
+                dispositivo=dispositivo,
+                host_ip=host_ip,
+                puerto=entry["puerto"],
+                protocolo=entry["protocolo"],
+                servicio=entry["servicio"],
+                estado=entry["estado"],
+                primera_detectado=timezone.now(),
+                ultima_detectado=timezone.now(),
+                ultima_trabajo=trabajo,
+            )
+        else:
+            if entry["estado"] == "abierto" or resumen.estado != "abierto":
+                resumen.estado = entry["estado"]
+            resumen.servicio = entry["servicio"]
+            resumen.ultima_detectado = timezone.now()
+            resumen.ultima_trabajo = trabajo
+            resumen.save(update_fields=["estado", "servicio", "ultima_detectado", "ultima_trabajo"])

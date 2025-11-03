@@ -72,6 +72,8 @@ def run_port_scan(
         "unfiltered": "filtrado",
     }
 
+    incluir_cerrados = tipo == "personalizado"
+
     for host in nm.all_hosts():
         for proto in nm[host].all_protocols():
             for port, info in nm[host][proto].items():
@@ -79,7 +81,8 @@ def run_port_scan(
                 estado = estado_map.get(estado_raw, estado_raw)
                 if estado in resumen:
                     resumen[estado] += 1
-                if estado != "abierto":
+                guardar = estado == "abierto" or estado == "filtrado" or (estado == "cerrado" and incluir_cerrados)
+                if not guardar:
                     continue
                 servicio = info.get("name", "")
                 resultados.append(

@@ -12,12 +12,17 @@
     <header class="navbar">
         <a class="brand" href="{% url 'home' %}">MONET</a>
         <nav class="nav-links">
-            <a href="{% url 'home' %}">Agente local</a>
-            <a href="{% url 'detector_status' %}">Detección de hosts</a>
+            <a href="{% url 'home' %}">Agente</a>
+            <a href="{% url 'detector_status' %}">Detector de hosts</a>
             <a href="{% url 'scanner_dashboard' %}">Escáner de puertos</a>
-            <a href="{% url 'detector_dispositivos' %}">Dispositivos</a>
-            <a href="{% url 'detector_hosts' %}">Hosts detectados</a>
-            <a href="{% url 'detector_analisis' %}">Análisis</a>
+            <div class="nav-group">
+                <button type="button" class="nav-toggle" aria-expanded="false">Información</button>
+                <div class="nav-dropdown">
+                    <a href="{% url 'agente_historial' %}">Historial del agente</a>
+                    <a href="{% url 'detector_informacion' %}">Detección de red</a>
+                    <a href="{% url 'escaner_informacion' %}">Escáner de puertos</a>
+                </div>
+            </div>
         </nav>
     </header>
     <main class="page-content">
@@ -26,6 +31,57 @@
     <footer class="page-footer">
         <small>Seminario 2025 · Backend local</small>
     </footer>
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const groups = Array.from(document.querySelectorAll(".nav-group"));
+        groups.forEach((group) => {
+            const button = group.querySelector("button");
+            if (!button) {
+                return;
+            }
+            button.addEventListener("click", function (event) {
+                event.preventDefault();
+                const isOpen = group.classList.contains("open");
+                groups.forEach((g) => {
+                    g.classList.remove("open");
+                    const btn = g.querySelector("button");
+                    if (btn) {
+                        btn.setAttribute("aria-expanded", "false");
+                    }
+                });
+                const nextState = !isOpen;
+                if (nextState) {
+                    group.classList.add("open");
+                }
+                button.setAttribute("aria-expanded", String(nextState));
+            });
+        });
+
+        document.addEventListener("click", function (event) {
+            if (!event.target.closest(".nav-group")) {
+                groups.forEach((g) => {
+                    g.classList.remove("open");
+                    const btn = g.querySelector("button");
+                    if (btn) {
+                        btn.setAttribute("aria-expanded", "false");
+                    }
+                });
+            }
+        });
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape") {
+                groups.forEach((g) => {
+                    g.classList.remove("open");
+                    const btn = g.querySelector("button");
+                    if (btn) {
+                        btn.setAttribute("aria-expanded", "false");
+                    }
+                });
+            }
+        });
+    });
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

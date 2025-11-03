@@ -17,17 +17,22 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from agente.views import agente_status
-from detector.views import detector_status, detector_devices, detector_analyses, detector_hosts
-from escaner.views import scanner_dashboard
+from agente.views import agente_status, agente_historial
+from detector.views import detector_status, detector_devices, detector_analyses, detector_hosts, detector_overview
+from escaner.views import scanner_dashboard, puertos_encontrados_view, puertos_resumen_view, escaner_overview
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("", agente_status, name="home"),
     path("agente/", agente_status, name="agente_status"),
+    path("agente/historial/", agente_historial, name="agente_historial"),
     path("detector/", detector_status, name="detector_status"),
     path("dispositivos/", detector_devices, name="detector_dispositivos"),
     path("hosts/", detector_hosts, name="detector_hosts"),
     path("analisis/", detector_analyses, name="detector_analisis"),
+    path("detector/informacion/", detector_overview, name="detector_informacion"),
     path("escaner/", scanner_dashboard, name="scanner_dashboard"),
+    path("escaner/informacion/", escaner_overview, name="escaner_informacion"),
+    path("escaner/puertos/", puertos_encontrados_view, name="puertos_encontrados"),
+    path("escaner/resumen/", puertos_resumen_view, name="puertos_resumen"),
 ]

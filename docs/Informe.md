@@ -88,3 +88,16 @@ Planeamiento del modulo de escaneo de puertos
 Creacion de models, services: port_scan y persistence, scanner, sirven para ejecutar el escaneo dependiendo las opciones propuestas para la primera version, tanto como para una ip, un grupo de ips, dispostivios activos con respecto a analisis recientes
 Creacion del command para manejar con el manage.py
 # Anotaciones 11125 - tercer modulo
+creacion de las vistas y mejora en funcionalidades para el tratado de datos obtenidos en el escaneo, el modulo puede escanear ips que el usuario elija(pueden ser varias), puede elegir dispositivos activos(MEJORA PENDIENTE DE QUE SE CONSIDERA ACTIVO EN DISPOSITIVOS), o elegir analisis recientes que tienen las ips mas recientes(lo mismo que en dispositivos)
+hay varios tipos de escaneo, por ahora 3 pero estoy agregando la funcionalidad de poder elegir comandos a eleccion
+mejora visual de que puerto es de que ip
+
+# Anotaciones 31125 - tercer modulo
+se ajusto el guardado de puertos, se creo una tabla para llevar registro y evitar duplicaciones cuando un puerto esta enlazado a un dispositivo en especifico, similar a historial_dispositivos
+ahora se supone que guarda algunos puertos cerrados y todos los filtrados
+mejora visual para mirar la informacion recolectada por los modulos
+mejora en el nav bar
+mejora completa para --- PRIMERA PRESENTACION ---
+
+pendiente revisar en la vm el funcionamiento y ponerse a mirar todo el codigo
+
