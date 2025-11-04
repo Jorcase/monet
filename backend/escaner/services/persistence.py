@@ -19,7 +19,8 @@ def guardar_resultados(
     nota_previa = (trabajo.notas or "").strip()
     resumen_texto = f"A: {abiertos} / C: {cerrados} / F: {filtrados}"
     trabajo.notas = f"{nota_previa} · {resumen_texto}" if nota_previa else resumen_texto
-    trabajo.fin = timezone.now()
+    ahora = timezone.now()
+    trabajo.fin = ahora
     trabajo.estado = "completado"
     trabajo.save(update_fields=["notas","fin","estado"])
 
@@ -57,14 +58,23 @@ def guardar_resultados(
                 protocolo=entry["protocolo"],
                 servicio=entry["servicio"],
                 estado=entry["estado"],
-                primera_detectado=timezone.now(),
-                ultima_detectado=timezone.now(),
+                primera_detectado=ahora,
+                ultima_detectado=ahora,
                 ultima_trabajo=trabajo,
             )
         else:
-            if entry["estado"] == "abierto" or resumen.estado != "abierto":
-                resumen.estado = entry["estado"]
+            nuevo_estado = resumen.estado
+            if entry["estado"] == "abierto":
+                nuevo_estado = "abierto"
+            elif trabajo.tipo_scan == "personalizado":
+                nuevo_estado = entry["estado"]
+            elif resumen.estado not in {"abierto"}:
+                nuevo_estado = entry["estado"]
+
+            if nuevo_estado != resumen.estado:
+                resumen.estado = nuevo_estado
+
             resumen.servicio = entry["servicio"]
-            resumen.ultima_detectado = timezone.now()
+            resumen.ultima_detectado = ahora
             resumen.ultima_trabajo = trabajo
             resumen.save(update_fields=["estado", "servicio", "ultima_detectado", "ultima_trabajo"])
