@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
@@ -18,6 +19,13 @@ class TrabajoScanner(models.Model):
         ("error", "Error"),
     ]
 
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="trabajos_scanner",
+    )
     analisis = models.ForeignKey("detector.AnalisisRed", on_delete=models.SET_NULL, null=True, blank=True, related_name="trabajos_scanner")
     objetivo = models.CharField(max_length=255)
     tipo_scan = models.CharField(max_length=32, choices=TIPO_CHOICES)

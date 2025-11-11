@@ -1,4 +1,4 @@
-[App móvil / App web]  <--->  [API REST en la nube]  <--->  [Backend local (Docker o VM)]
+[App móvil / App web]  <--->  [API REST en la nube]  <--->  [Backend local (VM o localmente con comandos(preferentemente mas facil))]
                                        |
                                  [Base de datos PostgreSQL]
 Informe
@@ -12,7 +12,12 @@ Ver interfaz: ifconfig o ip a (ej enp6s0)
 # VM no utiliza venv, instala todo globalmente con
 # sudo python3 -m pip install --break-system-packages -r requirements.txt
 
-
+# pasos: 
+1. clonar el repo
+2. crear o activar el venv
+3. instalar requirements
+4. ejecutar: sudo -E "$(pwd)/.venv/bin/python" backend/manage.py runserver 
+"PENDIENTE COMPLETAR"
 
 Instalaciones:
 	Paquetes de sistema: tcpdump, nmap, libpcap-dev, python3, pip3, git
@@ -87,17 +92,117 @@ existe una herrapienta llamada arp-scan que hace lo mismo que este modulo
 Planeamiento del modulo de escaneo de puertos
 Creacion de models, services: port_scan y persistence, scanner, sirven para ejecutar el escaneo dependiendo las opciones propuestas para la primera version, tanto como para una ip, un grupo de ips, dispostivios activos con respecto a analisis recientes
 Creacion del command para manejar con el manage.py
-# Anotaciones 11125 - tercer modulo
+# Anotaciones 011125 - tercer modulo
 creacion de las vistas y mejora en funcionalidades para el tratado de datos obtenidos en el escaneo, el modulo puede escanear ips que el usuario elija(pueden ser varias), puede elegir dispositivos activos(MEJORA PENDIENTE DE QUE SE CONSIDERA ACTIVO EN DISPOSITIVOS), o elegir analisis recientes que tienen las ips mas recientes(lo mismo que en dispositivos)
 hay varios tipos de escaneo, por ahora 3 pero estoy agregando la funcionalidad de poder elegir comandos a eleccion
 mejora visual de que puerto es de que ip
 
-# Anotaciones 31125 - tercer modulo
+# Anotaciones 031125 - tercer modulo
 se ajusto el guardado de puertos, se creo una tabla para llevar registro y evitar duplicaciones cuando un puerto esta enlazado a un dispositivo en especifico, similar a historial_dispositivos
 ahora se supone que guarda algunos puertos cerrados y todos los filtrados
 mejora visual para mirar la informacion recolectada por los modulos
 mejora en el nav bar
 mejora completa para --- PRIMERA PRESENTACION ---
 
-pendiente revisar en la vm el funcionamiento y ponerse a mirar todo el codigo
+# Anotaciones 041125 - rediseño del proyecto
 
+fuertes:
+agente de monitoreo de redes domesticas avanzadas / pymes
+que identifica dispositivos, vigila puertos expuestos y captura tráfico para generar reportes forenses y de seguridad
+herramienta gratuita y flexible a cualquier sistema operativo al utilizar una vm
+acceso a informacion real de la red
+sistema audita, registra histórico, automatiza alertas y permite gestión centralizada
+# Anotaciones 051125 - rediseño del proyecto
+aplicaciones similares de guia: advanced-ip-scanner
+mejoras: 
+1. alerta de cuando se detecta que se abre o cierra un puerto y registrarlo
+2. automatizar tareas con los cron(pendiente definir bien)
+3. generacion de reportes periodicos para audiotrias internas con posibilidad de descargarlos en formato pdf y si son diarios o periodicamente que se puedan enviar por correo al administrador del agente
+
+4. captura puntual, constante, programada, envio de paquetes a diferentes puertos para controlar el trafico de diferentes protocolos
+
+5. heuristicas claramente tener en cuenta a la hora de hacer el modulo de captura
+
+6. fingerprinting pasivo y activo, creo que scapy tambien tiene una manera de hacer esto o no, digo como considerarlo como opcion
+
+7. signature simple (pendiente a definir bien si se hace)
+8. almacenamiento mas .pcap mm para que serviria tener un pcap en vez de guardar en formato de texto los datos relevantes, duda pendiente
+
+9. notificaciones en cambios seguramente correo para la version web, cuando hagamos la movil sera correo y push
+
+10. opciones de hacer analisis rapido, exhaustivo y bueno, se podria hacer que desde la version que yo entro a la web en la nube haga un analisis icmp y si esque tengo acceso a la vm local ahi sea mucho mas informativo porque ya podriamos utilizar arp y acceso a la red mas real.
+
+11. autenticacion de usuarios vistas protegidas, 3 tipos de usuarios, el que puede hacer todo desdes cualquier lugar y puede acceder a todo lo relacionado a su cuenta, el que puede ejecutar y ver cosas pero no puede eliminar y solo modificar nombres, y otro usuario comuin que pueda visualizar y ejecutar funciones basicas(en la web en la nube algo asi como una app movil que detecta dispostivios con icmp o detecta puertos) si quiere mas permisos necesita loggearse. (prototipo de lo que podria ser si hay tiempo, quizas el ultimo tipo de usuario no se haga aun por tiempos pero veremos)
+12. cambiar a postgres la bd (pendiente a hacer luego de tener las funcionalidades realizadas)
+13. front react tailwind, chart.js 
+14. api y bd en la nube
+15. Guardar registros en nube estilo “cloud save”
+
+16. Captura para enriquecer dispositivos (IMPORTANTE hacerlo bien para obetener la mejor informacion al capturar datos)
+17. CRUD para datos de dispositivos, analisis, notas, diferentes cosas que sean utiles que el usuario pueda modificar para conveniencia de uso practico del sistema
+18. Capacidad de bloquear dispositivos de la red si el que utiliza el sistema lo considera no conocido.(podriamos ver de agregar este tipo de cosas que generar un mayor control en la red tambien, claramente solo si tiene el backend instalado)
+
+
+
+# tareas:
+alertas de cambios de puertos
+automatizar tareas con cron/management commands + registros de ejecucion
+modulo de captura pasiva/activa para enriquecer dispositivos 1/2
+
+crud de dispositivos/analiticas para gestion manual
+notificaciones y reportes
+roles y autenticacion (jwt)
+migrar a postrgres
+api rest django consumo externo y sync
+guardado "cloud save" + arquitectura multiagente(tokens/registro de agente)
+front react tailwind chart.js reusa api o pensar en react native desarrollo movil
+
+heurísticas, fingerprinting, signatures, bloqueo de dispositivos. Estos son diferenciales; documentá qué heurística o técnica aplicás y qué limitaciones tiene.
+
+mirar como ejecutar la aplicacion para evitar usar la vm
+# Anotaciones 061125
+- ubicado en monet:
+para evitar la vm ejecutar:
+# sudo -E "$(pwd)/.venv/bin/python" backend/manage.py runserver 
+
+- ubicado en backend 
+sudo -E /home/jorcas/Documentos/2025-2doCuatrimestre/Seminario/monet/.venv/bin/python manage.py runserver
+
+
+# Anotaciones 071125
+creacion de models en captura y analitica
+creacion de services managment commands en captura(pendiente leer y comprender, tambien probar)
+
+tareas:
+1. Autenticación y roles en Django
+- modificacion en setting, urls, creacion de login.html, importacion login_required en agente detector y escaner, creacion de comando que crea los tipos de usuarios en backend management commands
+
+- cambio de nombre en carpeta backend ahora se llama config para evitar confusiones cambios en asgi.py,setting.py,wsgi.py,manage.py
+
+2. API REST con DRF (en este mismo proyecto)
+creacion de app api, archivo serializers para dispositivo capturasesion y viewsets, se exponen como endpoints read-only
+config urls que incluye api
+registracion de viewsets en api/urls
+se activo en config/settings rest_framework y se configuro REST_FRAMEWORK para usar SessionAuthentication + IsAuthenticated por defecto
+
+3. Analítica y alertas
+creacion de services engine.py que recorre HeuristicaRegla activas y genera HeuristicaEvento a partir de los datos de captura y puertos (reglas listas: umbral_trafico, puerto_sensible, puerto_persistente).
+Se agregó el comando  evaluar_heuristicas para disparar manualmente la evaluación y los eventos ya se pueden consultar por admin o por /api/alertas/.
+Todos los modelos de captura/analítica están registrados en el admin 
+El sniffer ahora detecta hostnames desde DHCP/DNS/mDNS y los aplica al inventario junto con heurísticas que clasifican los dispositivos por tipo; cada hostname y tipo guarda la fuente (captura/detector/manual) para mantener trazabilidad.
+# Anotaciones 101125 y Anotaciones 111125
+4. Frontend
+instalacion de react, tailwind3
+instalacion de react-router-dom
+instalacion de shadcn y flowbite
+
+trabajando con la api para configurarla correctamente y autenticacion
+- se limpió la UI vieja de Django, quedando solo la API + admin.
+- agregamos endpoints `/api/auth/*` (csrf, login, logout, me, register) y probamos el flujo completo con curl usando el superusuario `monet`.
+- todos los modelos expuestos por la API ahora tienen `owner` y los viewsets filtran por `request.user`; los comandos (`detectar_hosts`, `capturar_*`, `escanea_puertos`, `evaluar_heuristicas`) aceptan `--owner` y usan `resolve_owner`.
+- configuramos CORS/cookies (`MONET_FRONTEND_ORIGIN`, `MONET_SESSION_COOKIE`, etc.) para que el front consuma la API usando sesiones.
+
+
+# Tareas por hacer cuando funcione todo lo basico
+5. Integracion nube
+6. Envio de correos/notificaciones, reportes pdf/csv, tareas programadas(cron/celery)

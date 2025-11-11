@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Iterable
 from django.core.management.base import BaseCommand, CommandError
 
+from config.ownership import OwnerResolutionError, resolve_owner
 from detector.models import AnalisisRed, Dispositivo
 from escaner.models import TrabajoScanner
 from escaner.services.scanner import ejecutar_trabajo
@@ -39,6 +40,7 @@ class Command(BaseCommand):
         parser.add_argument("--tipo", default="rapido", choices=["rapido", "tcp-1000", "tcp-completo", "personalizado"], help="Tipo de escaneo a ejecutar")
         parser.add_argument("--puertos", help="Lista de puertos a escanear cuando el tipo es personalizado (ej. 22,80,443 8000-8100)")
         parser.add_argument("--analisis-id", type=int, help="ID del AnalisisRed asociado (opcional)")
+        parser.add_argument("--owner", help="Usuario propietario del trabajo (default: primer usuario).")
 
     def handle(self, *args, **options):
         targets = self._obtener_targets(options)
@@ -62,11 +64,25 @@ class Command(BaseCommand):
             except AnalisisRed.DoesNotExist:
                 raise CommandError(f"AnalisisRed {analisis_id} no existe.")
 
+        owner_username = options.get("owner")
+        try:
+            owner = resolve_owner(owner_username, required=False)
+        except OwnerResolutionError as exc:
+            raise CommandError(str(exc))
+
+        if owner is None and analisis and analisis.owner_id:
+            owner = analisis.owner
+        if owner is None:
+            raise CommandError(
+                "No se pudo determinar un usuario propietario. Usa --owner o define MONET_DEFAULT_OWNER."
+            )
+
         trabajo = TrabajoScanner.objects.create(
             analisis=analisis,
             objetivo=", ".join(targets),
             tipo_scan=tipo,
             estado="pendiente",
+            owner=owner,
         )
         if puertos:
             trabajo.notas = f"Puertos personalizados: {puertos}"

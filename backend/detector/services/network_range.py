@@ -8,8 +8,9 @@ class NetworkSnapshot(NamedTuple):
     ip_local: ipaddress.IPv4Address
     interfaz: str
     mac: str
+    hostname: str
 
-def get_local_network() -> NetworkSnapshot: #es como un return entonces? 
+def get_local_network() -> NetworkSnapshot: 
     agente =  AgenteLocal.objects.order_by("-ultima_actualizacion").first()
     if not agente:
         raise  RuntimeError("No hay informacion del agente local.")
@@ -19,6 +20,21 @@ def get_local_network() -> NetworkSnapshot: #es como un return entonces?
         ip_local=ipaddress.ip_address(agente.ip_local),
         interfaz=agente.interfaz,
         mac=agente.mac,
+        hostname=agente.hostname,
     )
 
+
+def build_local_host_entry(snapshot: NetworkSnapshot) -> dict:
+    """
+    Genera una entrada compatible con persist_scan_results para representar
+    al propio agente dentro del análisis.
+    """
+    return {
+        "ip": str(snapshot.ip_local),
+        "mac": snapshot.mac.lower() if snapshot.mac else "",
+        "latencia_ms": 0,
+        "metodo": "agente",
+        "hostname": snapshot.hostname,
+        "mac_aleatoria": False,
+    }
 

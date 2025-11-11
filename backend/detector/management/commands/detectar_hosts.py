@@ -1,8 +1,9 @@
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
+from config.ownership import OwnerResolutionError, resolve_owner
 from detector.models import AnalisisRed
-from detector.services.network_range import get_local_network
+from detector.services.network_range import get_local_network, build_local_host_entry
 from detector.services.arp_scan import perform_arp_scan
 from detector.services.persistence import persist_scan_results
 
@@ -11,6 +12,10 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):#util si permitimos varias interfaces en la vm
         parser.add_argument("--interface", help="Forzar el uso de una interfaz especifica")
+        parser.add_argument(
+            "--owner",
+            help="Nombre de usuario propietario de los datos generados (default: primer usuario existente).",
+        )
     
     def handle(self, *args, **options):
         try:
@@ -18,12 +23,18 @@ class Command(BaseCommand):
         except RuntimeError as exc:
             raise  CommandError(str(exc)) 
         interfaz = options.get("interface") or snapshot.interfaz
+        owner_username = options.get("owner")
+        try:
+            owner = resolve_owner(owner_username)
+        except OwnerResolutionError as exc:
+            raise CommandError(str(exc))
 
         analisis = AnalisisRed.objects.create(
             inicio=timezone.now(),
             interfaz=interfaz,
             tipo="escaner-activo",
             notas="Detección de hosts por ARP",
+            owner=owner,
         )
         try:
             hosts, duracion_total_ms = perform_arp_scan(
@@ -31,11 +42,13 @@ class Command(BaseCommand):
                 interfaz,
                 local_ip=snapshot.ip_local,
             )
-
+            local_host = build_local_host_entry(snapshot)
+            if local_host and not any(h["ip"] == local_host["ip"] for h in hosts):
+                hosts.append(local_host)
         except RuntimeError as exc:
             raise CommandError(str(exc))
         
-        resumen = persist_scan_results(analisis, hosts)
+        resumen = persist_scan_results(analisis, hosts, owner=owner)
         analisis.total_hosts_detectados = resumen["nuevos"] + resumen["actualizados"]
         analisis.fin = timezone.now()
         analisis.duracion_ms = int(duracion_total_ms)

@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
@@ -10,6 +11,13 @@ class AnalisisRed(models.Model):
     ] 
 
 
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="analisis_red",
+    )
     inicio = models.DateTimeField(default=timezone.now)
     fin = models.DateTimeField(null=True,blank=True)
     interfaz = models.CharField(max_length=64)
@@ -32,9 +40,33 @@ class Dispositivo(models.Model):
         ("inactivo","Inactivo"),
         ("desconocido","Desconocido"),
     ]
+    TIPO_CHOICES = [
+        ("desconocido", "Desconocido"),
+        ("pc", "PC / Notebook"),
+        ("movil", "Móvil / Tablet"),
+        ("tv", "Smart TV"),
+        ("iot", "IoT / Hogar"),
+        ("impresora", "Impresora / Periférico"),
+        ("router", "Router / Infraestructura"),
+        ("servidor", "Servidor / Appliance"),
+    ]
+    FUENTE_CHOICES = [
+        ("sin_datos", "Sin datos"),
+        ("detector", "Detector"),
+        ("captura", "Captura"),
+        ("manual", "Manual"),
+    ]
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="dispositivos",
+    )
     ip = models.GenericIPAddressField()
     mac = models.CharField(max_length=32, unique=True)
     hostname =  models.CharField(max_length=255,blank=True)
+    hostname_fuente = models.CharField(max_length=16, choices=FUENTE_CHOICES, default="sin_datos")
     mac_aleatoria = models.BooleanField(default=False)
     vendor = models.CharField(max_length=64, blank=True)
     es_temporal = models.BooleanField(default=False)
@@ -48,6 +80,11 @@ class Dispositivo(models.Model):
     ("manual", "Manual"),
     ]
     metodo_identificacion = models.CharField(max_length=16, choices=METODO_IDENT_CHOICES, default="mac")
+    tipo_dispositivo = models.CharField(max_length=16, choices=TIPO_CHOICES, default="desconocido")
+    tipo_fuente = models.CharField(max_length=16, choices=[("sin_datos","Sin datos"),("heuristica","Heurística"),("manual","Manual")], default="sin_datos")
+    sistema_operativo = models.CharField(max_length=128, blank=True)
+    fuente_fingerprint = models.CharField(max_length=32, blank=True)
+    ultima_fingerprint = models.DateTimeField(null=True, blank=True)
 
 
     class Meta:

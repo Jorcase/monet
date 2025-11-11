@@ -20,7 +20,7 @@ Funcionalidad:
 	3-Normaliza resultados y guarda en puerto-encontrado
 	4-Actualiza trabajo-escaner(registro del job) y al terminar actualiza analisis-red.total-hosts-conectados
 	
-# 4 - Captura_pasiva
+# 4 - Captura_pasiva y activa
 Funcionalidad:
 	1-Elegir interfaz y duracion
 	2-Capturar paquetes TCP

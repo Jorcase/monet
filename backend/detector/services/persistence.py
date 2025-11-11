@@ -7,9 +7,10 @@ from datetime import timedelta
 from detector.services.vendor import resolve_vendor
 
 
-def persist_scan_results(analisis: AnalisisRed, hosts: list[dict]) -> dict:
+def persist_scan_results(analisis: AnalisisRed, hosts: list[dict], owner=None) -> dict:
     resumen = {"nuevos":0,"actualizados":0}
     ahora = timezone.now()
+    owner = owner or getattr(analisis, "owner", None)
 
     for host in hosts:
         ip = host["ip"]
@@ -62,6 +63,9 @@ def persist_scan_results(analisis: AnalisisRed, hosts: list[dict]) -> dict:
             anterior_ultima_vez = dispositivo.ultima_vez
             dispositivo.ultima_vez = ahora
 
+            if owner and not dispositivo.owner_id:
+                dispositivo.owner = owner
+
             if hostname and hostname != dispositivo.hostname:
                 dispositivo.hostname = hostname
 
@@ -108,6 +112,7 @@ def persist_scan_results(analisis: AnalisisRed, hosts: list[dict]) -> dict:
                 ultima_vez=ahora,
                 metodo_identificacion=metodo,
                 estado="activo",
+                owner=owner,
             )
 
 

@@ -4,6 +4,8 @@ from django.db import transaction
 from django.utils import timezone
 
 from escaner.models import TrabajoScanner, PuertoEncontrado, PuertoResumen
+from analitica.models import HeuristicaRegla, HeuristicaEvento
+from analitica.services.engine import construir_eventos_cambio_puerto
 from detector.models import HostDetectado, Dispositivo
 
 @transaction.atomic
@@ -23,6 +25,15 @@ def guardar_resultados(
     trabajo.fin = ahora
     trabajo.estado = "completado"
     trabajo.save(update_fields=["notas","fin","estado"])
+
+    reglas_cambio = list(
+        HeuristicaRegla.objects.filter(
+            modulo_objetivo__in=["escaner", "global"],
+            activa=True,
+            parametros__tipo="cambio_puerto",
+        )
+    )
+    eventos_cambio: list[HeuristicaEvento] = []
 
     for entry in resultados:
         host_ip = entry["host"]
@@ -71,10 +82,36 @@ def guardar_resultados(
             elif resumen.estado not in {"abierto"}:
                 nuevo_estado = entry["estado"]
 
+            estado_anterior = resumen.estado
             if nuevo_estado != resumen.estado:
                 resumen.estado = nuevo_estado
+                if reglas_cambio:
+                    eventos_cambio.extend(
+                        construir_eventos_cambio_puerto(
+                            reglas_cambio,
+                            resumen,
+                            trabajo,
+                            estado_anterior,
+                            nuevo_estado,
+                            owner=_select_owner(
+                                trabajo.owner,
+                                resumen.dispositivo.owner if resumen.dispositivo else None,
+                                trabajo.analisis.owner if trabajo.analisis else None,
+                            ),
+                        )
+                    )
 
             resumen.servicio = entry["servicio"]
             resumen.ultima_detectado = ahora
             resumen.ultima_trabajo = trabajo
             resumen.save(update_fields=["estado", "servicio", "ultima_detectado", "ultima_trabajo"])
+
+    if eventos_cambio:
+        HeuristicaEvento.objects.bulk_create(eventos_cambio)
+
+
+def _select_owner(*owners):
+    for owner in owners:
+        if owner:
+            return owner
+    return None
