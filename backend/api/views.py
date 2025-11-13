@@ -519,12 +519,24 @@ class HostDetectadoListView(APIView):
 
     def get(self, request):
         analisis_id = request.query_params.get("analisis_id")
+        host_id = request.query_params.get("host_id")
+        mac_filter = request.query_params.get("mac")
+        ip_filter = request.query_params.get("ip")
         user = request.user
         queryset = HostDetectado.objects.select_related("analisis").filter(
             Q(analisis__owner=user) | Q(analisis__owner__isnull=True)
         )
         if analisis_id:
             queryset = queryset.filter(analisis_id=analisis_id)
+        if host_id:
+            try:
+                queryset = queryset.filter(id=int(host_id))
+            except (TypeError, ValueError):
+                queryset = queryset.none()
+        if mac_filter:
+            queryset = queryset.filter(mac__iexact=mac_filter.strip())
+        if ip_filter:
+            queryset = queryset.filter(ip=ip_filter.strip())
 
         try:
             limit = int(request.query_params.get("limit", 200))

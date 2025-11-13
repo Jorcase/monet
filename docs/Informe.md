@@ -223,12 +223,10 @@ trabajando con la api para configurarla correctamente y autenticacion
   - La card principal ocupa todo el ancho y muestra todos los campos disponibles (badges para estado, MAC aleatoria, temporalidad, fingerprint timestamps, etc.) con fechas formateadas.
   - El historial ahora compara correctamente la IP vigente en cada momento (IP actual = IP de la fila anterior) y la tabla lista también la IP registrada, MAC, inicio/fin y motivo de la variación.
   - La card de puertos queda debajo como placeholder hasta integrar el módulo de escaneo.
-
+  - correcion en el modulo agente en el select ahora se puede elegir cualquier tipo de nombres o los tipicos. Tooltip en S0 en detalle de dispositivo
 
 # Tareas por hacer cuando funcione todo lo basico
-modulo agente:
-hacer que compartan mitad y mitad los cards
-agregar paginacion en el historial y mejorar el select para poner un nombre personalizado si uno quiere, pero bueno facilite los nombres tipicos, pero la capacidad de poner nose casa 1, casa 2
+
 
 5. Integracion nube
 6. Envio de correos/notificaciones, reportes pdf/csv, tareas programadas(cron/celery)

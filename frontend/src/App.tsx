@@ -16,6 +16,8 @@ import { PlaceholderPage } from "@/pages/Placeholder"
 import SignupPage from "@/pages/Sign-up"
 import DevicesPage from "@/pages/detectores/DevicesPage"
 import DeviceDetailPage from "@/pages/detectores/DeviceDetailPage"
+import HostsPage from "@/pages/detectores/HostsPage"
+import HostDetailPage from "@/pages/detectores/HostDetailPage"
 import { GuestRoute, ProtectedRoute } from "@/routes/ProtectedRoute"
 
 export default function App() {
@@ -40,15 +42,8 @@ export default function App() {
                   <Route path="/detector" element={<DetectorPage />} />
                   <Route path="/detector/dispositivos" element={<DevicesPage />} />
                   <Route path="/detector/dispositivos/:deviceId" element={<DeviceDetailPage />} />
-                  <Route
-                    path="/detector/hosts"
-                    element={
-                      <PlaceholderPage
-                        title="Hosts"
-                        description="Detalles de hosts descubiertos durante las capturas."
-                      />
-                    }
-                  />
+                  <Route path="/detector/hosts" element={<HostsPage />} />
+                  <Route path="/detector/hosts/:hostId" element={<HostDetailPage />} />
                   <Route
                     path="/detector/analisis"
                     element={

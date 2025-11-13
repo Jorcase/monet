@@ -56,6 +56,11 @@ export function LocationSelect({
   const showCustomOption =
     !!lowerSearch && !normalizedOptions.some((opt) => opt.toLowerCase() === lowerSearch)
 
+  const commitCustomValue = () => {
+    if (!lowerSearch) return
+    handleSelect(search.trim())
+  }
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -80,6 +85,12 @@ export function LocationSelect({
             onValueChange={setSearch}
             placeholder="Buscar o escribir..."
             className="h-9"
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault()
+                commitCustomValue()
+              }
+            }}
           />
           <CommandList>
             <CommandEmpty>Sin coincidencias.</CommandEmpty>

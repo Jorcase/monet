@@ -1,9 +1,10 @@
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { ArrowLeft, Loader2 } from "lucide-react"
+import { ArrowLeft, Info, Loader2 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   Table,
   TableBody,
@@ -101,7 +102,15 @@ export default function DeviceDetailPage() {
                 <InfoRow label="IP actual" value={device.ip} />
                 <InfoRow label="MAC" value={device.mac} monospace />
                 <InfoRow label="Vendor" value={device.vendor || "Sin datos"} />
-                <InfoRow label="Sistema operativo" value={device.sistema_operativo || "Sin datos"} />
+                <InfoRow
+                  label="Sistema operativo"
+                  value={device.sistema_operativo || "Sin datos"}
+                  tooltip={
+                    device.sistema_operativo
+                      ? getOsConfidence(device.fuente_fingerprint || device.tipo_fuente)
+                      : undefined
+                  }
+                />
                 <InfoRow label="Método de identificación" value={formatLabel(device.metodo_identificacion)} />
                 <InfoRow label="Fuente de datos" value={formatLabel(device.tipo_fuente)} />
                 <InfoRow label="Hostname (fuente)" value={formatLabel(device.hostname_fuente)} />
@@ -188,15 +197,35 @@ function InfoRow({
   label,
   value,
   monospace,
+  tooltip,
 }: {
   label: string
   value: string
   monospace?: boolean
+  tooltip?: string
 }) {
   return (
-    <div className="rounded border border-border/70 p-3">
+    <div className="flex items-center justify-between rounded border border-border/70 p-3">
       <p className="text-xs uppercase text-muted-foreground">{label}</p>
-      <p className={monospace ? "font-mono text-sm" : "text-sm font-medium"}>{value}</p>
+      <div className="flex items-center gap-1">
+        <span className={monospace ? "font-mono text-sm" : "text-sm font-medium"}>{value}</span>
+        {tooltip ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="text-muted-foreground transition-colors hover:text-foreground"
+                aria-label="Ver detalle del dato"
+              >
+                <Info className="h-3.5 w-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs text-xs">
+              {tooltip}
+            </TooltipContent>
+          </Tooltip>
+        ) : null}
+      </div>
     </div>
   )
 }
@@ -219,6 +248,22 @@ function formatLabel(value?: string | null) {
     .split("-")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ")
+}
+
+function getOsConfidence(source?: string | null) {
+  const normalized = (source ?? "").toLowerCase()
+  switch (normalized) {
+    case "manual":
+      return "Dato ingresado manualmente (precisión 100%)."
+    case "captura":
+    case "sniffer":
+      return "Estimación ≈85% basada en fingerprints obtenidos durante las capturas."
+    case "heuristica":
+    case "detector":
+      return "Estimación ≈70% basada en heurísticas del detector."
+    default:
+      return "Usa el dato como referencia, la precisión no es exacta."
+  }
 }
 
 function statusToVariant(status: string): "default" | "secondary" | "outline" | "destructive" {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import type { FormEvent } from "react"
 import { ChevronDownIcon, Loader2 } from "lucide-react"
 import { toast } from "sonner"
@@ -13,10 +13,13 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Pagination } from "@/components/ui/pagination"
 import { useAgentStatus } from "@/hooks/useAgentStatus"
 import { useAgentHistory } from "@/hooks/useAgentHistory"
 import { parseApiError } from "@/lib/api-error"
 import { LocationSelect } from "@/components/location-select"
+
+const HISTORY_PAGE_SIZE = 5
 
 export default function AgentPage() {
   const { data, loading, error, refreshing, refresh } = useAgentStatus()
@@ -74,12 +77,12 @@ export default function AgentPage() {
         </Button>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[380px,1fr]">
+      <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Ejecutar/Actualizar agente</CardTitle>
             <CardDescription>
-              Podés indicar una interfaz y una ubicación (alias) antes de ejecutar.
+              Podés indicar una interfaz y un alias de tu ubicacion antes de ejecutar.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -98,10 +101,10 @@ export default function AgentPage() {
                 </p>
               </div>
               <div className="space-y-2">
-                <Label>Ubicación / alias</Label>
+                <Label>Alias (ubicación)</Label>
                 <LocationSelect value={ubicacion} onChange={setUbicacion} />
                 <p className="text-xs text-muted-foreground">
-                  Elegí una ubicación típica o escribí una personalizada para identificar la red.
+                  Elegí una ubicación típica o escribí un alias propio.
                 </p>
               </div>
               {actionError ? (
@@ -176,6 +179,18 @@ function HistorySection({
   error: string | null
   history: ReturnType<typeof useAgentHistory>["data"]
 }) {
+  const [page, setPage] = useState(1)
+  const totalPages = Math.max(1, Math.ceil(history.length / HISTORY_PAGE_SIZE))
+
+  useEffect(() => {
+    setPage(1)
+  }, [history])
+
+  const paginatedHistory = useMemo(() => {
+    const start = (page - 1) * HISTORY_PAGE_SIZE
+    return history.slice(start, start + HISTORY_PAGE_SIZE)
+  }, [history, page])
+
   return (
     <Card>
       <CardHeader>
@@ -195,32 +210,39 @@ function HistorySection({
             Aún no hay registros. Ejecutá el agente para ver el historial aquí.
           </p>
         ) : (
-          <div className="space-y-3">
-            {history.map((item) => (
-              <details
-                key={`${item.id}-${item.ultima_actualizacion}`}
-                className="group rounded-lg border border-border/70 px-4 transition-colors hover:border-border"
-              >
-                <summary className="flex cursor-pointer items-center justify-between gap-2 py-3 text-sm font-medium">
-                  <div className="flex flex-1 flex-col sm:flex-row sm:items-center sm:gap-4">
-                    <span>{formatDate(item.ultima_actualizacion)}</span>
-                    <span className="text-muted-foreground">
-                      {item.interfaz} · {item.ip_local}/{item.cidr} ·{" "}
-                      {item.ubicacion || "Sin ubicación"}
-                    </span>
+          <>
+            <div className="space-y-3">
+              {paginatedHistory.map((item) => (
+                <details
+                  key={`${item.id}-${item.ultima_actualizacion}`}
+                  className="group rounded-lg border border-border/70 px-4 transition-colors hover:border-border"
+                >
+                  <summary className="flex cursor-pointer items-center justify-between gap-2 py-3 text-sm font-medium">
+                    <div className="flex flex-1 flex-col sm:flex-row sm:items-center sm:gap-4">
+                      <span>{formatDate(item.ultima_actualizacion)}</span>
+                      <span className="text-muted-foreground">
+                        {item.interfaz} · {item.ip_local}/{item.cidr} ·{" "}
+                        {item.ubicacion || "Sin ubicación"}
+                      </span>
+                    </div>
+                    <ChevronDownIcon className="h-4 w-4 text-muted-foreground transition-transform group-open:-rotate-180" />
+                  </summary>
+                  <div className="mb-3 grid gap-2 border-t border-border/70 pt-3 text-sm text-muted-foreground sm:grid-cols-2">
+                    <InfoRow label="Ubicación" value={item.ubicacion || "Sin ubicación"} />
+                    <InfoRow label="Hostname" value={item.hostname} />
+                    <InfoRow label="MAC" value={item.mac} />
+                    <InfoRow label="Interfaz" value={item.interfaz} />
+                    <InfoRow label="IP" value={`${item.ip_local}/${item.cidr}`} />
                   </div>
-                  <ChevronDownIcon className="h-4 w-4 text-muted-foreground transition-transform group-open:-rotate-180" />
-                </summary>
-                <div className="mb-3 grid gap-2 border-t border-border/70 pt-3 text-sm text-muted-foreground sm:grid-cols-2">
-                  <InfoRow label="Ubicación" value={item.ubicacion || "Sin ubicación"} />
-                  <InfoRow label="Hostname" value={item.hostname} />
-                  <InfoRow label="MAC" value={item.mac} />
-                  <InfoRow label="Interfaz" value={item.interfaz} />
-                  <InfoRow label="IP" value={`${item.ip_local}/${item.cidr}`} />
-                </div>
-              </details>
-            ))}
-          </div>
+                </details>
+              ))}
+            </div>
+            {totalPages > 1 ? (
+              <div className="mt-4 flex justify-end">
+                <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+              </div>
+            ) : null}
+          </>
         )}
       </CardContent>
     </Card>

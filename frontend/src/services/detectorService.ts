@@ -18,8 +18,35 @@ export async function fetchDevice(dispositivoId: number) {
   return apiClient.get<DetectorDevice>(`/dispositivos/${dispositivoId}/`)
 }
 
-export async function fetchHosts(params?: { analisis_id?: number; limit?: number }) {
-  return apiClient.get<DetectorHost[]>("/detector/hosts/", { query: params })
+export interface HostQuery {
+  analisis_id?: number
+  limit?: number
+  host_id?: number
+  mac?: string
+  ip?: string
+}
+
+export async function fetchHosts(params?: HostQuery) {
+  const query: Record<string, string | number> = {}
+  if (params?.analisis_id != null) query.analisis_id = params.analisis_id
+  if (params?.limit != null) query.limit = params.limit
+  if (params?.host_id != null) query.host_id = params.host_id
+  if (params?.mac) query.mac = params.mac
+  if (params?.ip) query.ip = params.ip
+  return apiClient.get<DetectorHost[]>("/detector/hosts/", { query })
+}
+
+export async function fetchHost(hostId: number) {
+  const results = await fetchHosts({ host_id: hostId, limit: 1 })
+  return results[0] ?? null
+}
+
+export async function fetchHostHistory(filters: { mac?: string; ip?: string; limit?: number }) {
+  return fetchHosts({
+    mac: filters.mac,
+    ip: filters.ip,
+    limit: filters.limit ?? 200,
+  })
 }
 
 export async function fetchDeviceHistory(dispositivoId: number) {
@@ -40,6 +67,8 @@ export const detectorService = {
   fetchDevices,
   fetchDevice,
   fetchHosts,
+  fetchHost,
+  fetchHostHistory,
   fetchDeviceHistory,
   runDetectorAnalysis,
 }
