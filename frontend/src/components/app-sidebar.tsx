@@ -1,23 +1,22 @@
 import * as React from "react"
 import {
+  BookCopyIcon,
   CpuIcon,
   DatabaseIcon,
+  GitBranchIcon,
   HardDriveIcon,
   LayoutDashboardIcon,
   NetworkIcon,
   PackageSearchIcon,
   RadarIcon,
   SatelliteDishIcon,
-  SearchIcon,
   ServerCogIcon,
-  SettingsIcon,
   ShieldAlertIcon,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 
 import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
-import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
@@ -28,13 +27,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { useAuth } from "@/hooks/useAuth"
 
 const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
   navMain: [
     {
       title: "Dashboard",
@@ -47,7 +42,7 @@ const data = {
       icon: NetworkIcon,
     },
     {
-      title: "Detector de Hosts",
+      title: "Detector de dispositivos",
       url: "/detector",
       icon: RadarIcon,
     },
@@ -67,38 +62,46 @@ const data = {
       icon: ShieldAlertIcon,
     },
   ],
-  navSecondary: [
+  details: [
     {
-      title: "Configuración",
-      url: "/configuracion",
-      icon: SettingsIcon,
+      title: "Agente",
+      items: [{ name: "Agentes", url: "/agente/agentes", icon: NetworkIcon }],
     },
     {
-      title: "Búsqueda",
-      url: "/busqueda",
-      icon: SearchIcon,
-    },
-  ],
-  documents: [
-    {
-      name: "Dispositivos",
-      url: "/dispositivos",
-      icon: HardDriveIcon,
+      title: "Detector",
+      items: [
+        { name: "Dispositivos", url: "/detector/dispositivos", icon: HardDriveIcon },
+        { name: "Hosts", url: "/detector/hosts", icon: CpuIcon },
+        { name: "Análisis", url: "/detector/analisis", icon: DatabaseIcon },
+      ],
     },
     {
-      name: "Hosts",
-      url: "/hosts",
-      icon: CpuIcon,
+      title: "Escaner",
+      items: [
+        { name: "Puertos", url: "/escaner/puertos", icon: PackageSearchIcon },
+        { name: "Escáneres", url: "/escaner/escanners", icon: ServerCogIcon },
+      ],
     },
     {
-      name: "Flujos",
-      url: "/flujos",
-      icon: DatabaseIcon,
+      title: "Capturas",
+      items: [
+        { name: "Paquetes", url: "/captura/paquetes", icon: BookCopyIcon },
+        { name: "Sesiones", url: "/captura/sesiones", icon: DatabaseIcon },
+      ],
+    },
+    {
+      title: "Alertas",
+      items: [
+        { name: "Reglas", url: "/alertas/reglas", icon: ShieldAlertIcon },
+        { name: "Eventos", url: "/alertas/eventos", icon: ServerCogIcon },
+      ],
     },
   ],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user } = useAuth()
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -113,13 +116,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="space-y-6">
         <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavDocuments groups={data.details} />
       </SidebarContent>
-      <SidebarFooter>
-        <NavUser user={data.user} />
+      <SidebarFooter className="space-y-2">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <a href="https://github.com/tu-repo" target="_blank" rel="noreferrer">
+                <GitBranchIcon />
+                <span>Repositorio</span>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+        <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
   )

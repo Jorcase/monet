@@ -5,106 +5,131 @@ import { SiteHeader } from "@/components/site-header"
 import { ThemeProvider } from "@/components/theme-provider"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { Toaster } from "@/components/ui/sonner"
+import { AuthProvider } from "@/contexts/AuthContext"
 import DashboardPage from "@/pages/Dashboard"
+import AgentPage from "@/pages/AgentPage"
+import DetectorPage from "@/pages/DetectorPage"
+import CapturePage from "@/pages/CapturePage"
 import LoginPage from "@/pages/Login"
 import { PlaceholderPage } from "@/pages/Placeholder"
 import SignupPage from "@/pages/Sign-up"
+import DevicesPage from "@/pages/detectores/DevicesPage"
+import DeviceDetailPage from "@/pages/detectores/DeviceDetailPage"
+import { GuestRoute, ProtectedRoute } from "@/routes/ProtectedRoute"
 
 export default function App() {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <BrowserRouter>
-        <TooltipProvider>
-          <SidebarProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <TooltipProvider>
             <Routes>
-              <Route element={<MainShell />}>
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                <Route path="/dashboard" element={<DashboardPage />} />
+              <Route element={<ProtectedRoute />}>
                 <Route
-                  path="/agente"
                   element={
-                    <PlaceholderPage
-                      title="Agente de Red"
-                      description="Vista donde se configurará y monitoreará el agente de red."
-                    />
+                    <SidebarProvider>
+                      <MainShell />
+                    </SidebarProvider>
                   }
-                />
-                <Route
-                  path="/detector"
-                  element={
-                    <PlaceholderPage
-                      title="Detector de Hosts"
-                      description="Resumen de hosts descubiertos y estado de las heurísticas."
-                    />
-                  }
-                />
-                <Route
-                  path="/escaner"
-                  element={
-                    <PlaceholderPage
-                      title="Escáner de Puertos"
-                      description="Historial de escaneos y resultados por dispositivo."
-                    />
-                  }
-                />
-                <Route
-                  path="/captura"
-                  element={
-                    <PlaceholderPage
-                      title="Captura de Paquetes"
-                      description="Ejecuciones de captura y estadísticas asociadas."
-                    />
-                  }
-                />
-                <Route
-                  path="/alertas"
-                  element={
-                    <PlaceholderPage
-                      title="Alertas"
-                      description="Listado de eventos y alertas generadas por las heurísticas."
-                    />
-                  }
-                />
-                <Route
-                  path="/dispositivos"
-                  element={
-                    <PlaceholderPage title="Dispositivos" description="Inventario consolidado de dispositivos detectados." />
-                  }
-                />
-                <Route
-                  path="/hosts"
-                  element={
-                    <PlaceholderPage title="Hosts" description="Detalles de hosts descubiertos durante las capturas." />
-                  }
-                />
-                <Route
-                  path="/flujos"
-                  element={
-                    <PlaceholderPage title="Flujos" description="Registro de flujos capturados y metadatos relevantes." />
-                  }
-                />
-                <Route
-                  path="/configuracion"
-                  element={
-                    <PlaceholderPage
-                      title="Configuración"
-                      description="Preferencias generales de la plataforma Monet."
-                    />
-                  }
-                />
-                <Route
-                  path="/busqueda"
-                  element={
-                    <PlaceholderPage
-                      title="Búsqueda"
-                      description="Buscador global para encontrar dispositivos, hosts o eventos."
-                    />
-                  }
-                />
+                >
+                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/dashboard" element={<DashboardPage />} />
+                  <Route path="/agente" element={<AgentPage />} />
+                  <Route path="/agente/agentes" element={<AgentPage />} />
+                  <Route path="/detector" element={<DetectorPage />} />
+                  <Route path="/detector/dispositivos" element={<DevicesPage />} />
+                  <Route path="/detector/dispositivos/:deviceId" element={<DeviceDetailPage />} />
+                  <Route
+                    path="/detector/hosts"
+                    element={
+                      <PlaceholderPage
+                        title="Hosts"
+                        description="Detalles de hosts descubiertos durante las capturas."
+                      />
+                    }
+                  />
+                  <Route
+                    path="/detector/analisis"
+                    element={
+                      <PlaceholderPage
+                        title="Análisis"
+                        description="Historial de análisis realizados por el detector."
+                      />
+                    }
+                  />
+                  <Route path="/captura" element={<CapturePage />} />
+                  <Route path="/captura/sesiones" element={<CapturePage />} />
+                  <Route
+                    path="/captura/paquetes"
+                    element={
+                      <PlaceholderPage
+                        title="Paquetes"
+                        description="Explorá paquetes y archivos PCAP almacenados."
+                      />
+                    }
+                  />
+                  <Route
+                    path="/escaner"
+                    element={
+                      <PlaceholderPage
+                        title="Escáner de Puertos"
+                        description="Historial de escaneos y resultados por dispositivo."
+                      />
+                    }
+                  />
+                  <Route
+                    path="/escaner/puertos"
+                    element={
+                      <PlaceholderPage
+                        title="Puertos"
+                        description="Resumen de puertos detectados en los escaneos."
+                      />
+                    }
+                  />
+                  <Route
+                    path="/escaner/escanners"
+                    element={
+                      <PlaceholderPage
+                        title="Escáneres"
+                        description="Trabajos de escaneo y configuraciones ejecutadas."
+                      />
+                    }
+                  />
+                  <Route
+                    path="/alertas"
+                    element={
+                      <PlaceholderPage
+                        title="Alertas"
+                        description="Listado de eventos y alertas generadas por las heurísticas."
+                      />
+                    }
+                  />
+                  <Route
+                    path="/alertas/reglas"
+                    element={
+                      <PlaceholderPage
+                        title="Reglas"
+                        description="Gestioná las reglas que disparan alertas."
+                      />
+                    }
+                  />
+                  <Route
+                    path="/alertas/eventos"
+                    element={
+                      <PlaceholderPage
+                        title="Eventos"
+                        description="Eventos generados por el motor de alertas."
+                      />
+                    }
+                  />
+                </Route>
               </Route>
 
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/signup" element={<SignupPage />} />
+              <Route element={<GuestRoute />}>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/signup" element={<SignupPage />} />
+              </Route>
 
               <Route
                 path="*"
@@ -116,9 +141,10 @@ export default function App() {
                 }
               />
             </Routes>
-          </SidebarProvider>
-        </TooltipProvider>
-      </BrowserRouter>
+            <Toaster richColors closeButton />
+          </TooltipProvider>
+        </BrowserRouter>
+      </AuthProvider>
     </ThemeProvider>
   )
 }

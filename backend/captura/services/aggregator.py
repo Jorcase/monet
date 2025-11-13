@@ -63,6 +63,27 @@ class FlowAccumulator:
             return ""
         return ",".join(sorted(self.tcp_options))
 
+    def merge(self, other: "FlowAccumulator") -> None:
+        self.packets += other.packets
+        self.bytes += other.bytes
+        self.flag_syn |= other.flag_syn
+        self.flag_fin |= other.flag_fin
+        self.flag_rst |= other.flag_rst
+        self.ttl_total += other.ttl_total
+        self.ttl_count += other.ttl_count
+        self.tcp_window_total += other.tcp_window_total
+        self.tcp_window_count += other.tcp_window_count
+        self.tcp_options.update(other.tcp_options)
+        if self.tcp_mss is None and other.tcp_mss is not None:
+            self.tcp_mss = other.tcp_mss
+        if not self.payload_sample and other.payload_sample:
+            self.payload_sample = other.payload_sample
+
+        if not self.src_mac and other.src_mac:
+            self.src_mac = other.src_mac
+        if not self.dst_mac and other.dst_mac:
+            self.dst_mac = other.dst_mac
+
 
 @dataclass
 class FlowRecord:
@@ -72,8 +93,15 @@ class FlowRecord:
     ventana_fin: datetime
 
 
+@dataclass
+class FlowBucket:
+    accumulator: FlowAccumulator
+    first_seen: datetime
+    last_seen: datetime
+
+
 class FlowAggregator:
-    """Agrupa paquetes en ventanas temporales y genera registros listos para persistir."""
+    """Agrupa paquetes por flujo hasta que expiran por inactividad."""
 
     def __init__(
         self,
@@ -84,78 +112,76 @@ class FlowAggregator:
         if not SCAPY_AVAILABLE:
             raise CaptureUnavailable("Scapy no está instalado; no se puede capturar tráfico.")
 
-        self.window_seconds = max(window_seconds, 1)
+        self.timeout_seconds = max(window_seconds, 1)
         self.local_ips: Set[str] = set(local_ips or [])
         self.local_macs: Set[str] = {mac.lower() for mac in (local_macs or []) if mac}
 
-        self._current_window_start: Optional[datetime] = None
-        self._flows: Dict[FlowKey, FlowAccumulator] = {}
+        self._flows: Dict[FlowKey, FlowBucket] = {}
         self.total_packets: int = 0
         self.total_bytes: int = 0
 
     def consume(self, packet) -> List[FlowRecord]:
-        """Procesa un paquete y devuelve registros listos cuando se cierra una ventana."""
+        """Procesa un paquete y devuelve registros listos cuando caducan por inactividad."""
         ts = getattr(packet, "time", None)
         timestamp = timezone.now() if ts is None else timezone.make_aware(datetime.fromtimestamp(ts))
 
-        flushed: List[FlowRecord] = []
-        if self._current_window_start is None:
-            self._current_window_start = timestamp
-        elif timestamp >= self._current_window_start + timedelta(seconds=self.window_seconds):
-            flushed = self._flush(timestamp)
+        flushed = self._expire_flows(timestamp)
 
         flow_key, accumulator = self._extract_flow(packet)
         if flow_key is None or accumulator is None:
             return flushed
 
-        bucket = self._flows.setdefault(flow_key, accumulator)
-        if bucket is not accumulator:
-            bucket.packets += accumulator.packets
-            bucket.bytes += accumulator.bytes
-            bucket.flag_syn |= accumulator.flag_syn
-            bucket.flag_fin |= accumulator.flag_fin
-            bucket.flag_rst |= accumulator.flag_rst
-            bucket.ttl_total += accumulator.ttl_total
-            bucket.ttl_count += accumulator.ttl_count
-            bucket.tcp_window_total += accumulator.tcp_window_total
-            bucket.tcp_window_count += accumulator.tcp_window_count
-            bucket.tcp_options.update(accumulator.tcp_options)
-            if bucket.tcp_mss is None and accumulator.tcp_mss is not None:
-                bucket.tcp_mss = accumulator.tcp_mss
-            if not bucket.payload_sample and accumulator.payload_sample:
-                bucket.payload_sample = accumulator.payload_sample
-            if not bucket.src_mac and accumulator.src_mac:
-                bucket.src_mac = accumulator.src_mac
-            if not bucket.dst_mac and accumulator.dst_mac:
-                bucket.dst_mac = accumulator.dst_mac
+        bucket = self._flows.get(flow_key)
+        if bucket is None:
+            self._flows[flow_key] = FlowBucket(
+                accumulator=accumulator,
+                first_seen=timestamp,
+                last_seen=timestamp,
+            )
+        else:
+            bucket.accumulator.merge(accumulator)
+            bucket.last_seen = timestamp
 
         return flushed
 
     def finalize(self) -> List[FlowRecord]:
         """Devuelve los registros pendientes al terminar una captura."""
-        if not self._flows or self._current_window_start is None:
+        if not self._flows:
             return []
-        ventana_fin = self._current_window_start + timedelta(seconds=self.window_seconds)
-        records = self._build_records(ventana_fin)
+        records = [
+            FlowRecord(
+                key=key,
+                accumulator=bucket.accumulator,
+                ventana_inicio=bucket.first_seen,
+                ventana_fin=bucket.last_seen,
+            )
+            for key, bucket in self._flows.items()
+        ]
         self._flows.clear()
-        self._current_window_start = None
         return records
 
     # ------------------------------------------------------------------ #
     # Internos
-    def _flush(self, next_window_start: datetime) -> List[FlowRecord]:
-        ventana_fin = self._current_window_start + timedelta(seconds=self.window_seconds)
-        records = self._build_records(ventana_fin)
-        self._flows.clear()
-        self._current_window_start = next_window_start
-        return records
-
-    def _build_records(self, ventana_fin: datetime) -> List[FlowRecord]:
-        ventana_inicio = ventana_fin - timedelta(seconds=self.window_seconds)
-        return [
-            FlowRecord(key=key, accumulator=acc, ventana_inicio=ventana_inicio, ventana_fin=ventana_fin)
-            for key, acc in self._flows.items()
-        ]
+    def _expire_flows(self, now: datetime) -> List[FlowRecord]:
+        if not self._flows:
+            return []
+        threshold = now - timedelta(seconds=self.timeout_seconds)
+        expired: List[FlowRecord] = []
+        to_remove: List[FlowKey] = []
+        for key, bucket in self._flows.items():
+            if bucket.last_seen <= threshold:
+                expired.append(
+                    FlowRecord(
+                        key=key,
+                        accumulator=bucket.accumulator,
+                        ventana_inicio=bucket.first_seen,
+                        ventana_fin=bucket.last_seen,
+                    )
+                )
+                to_remove.append(key)
+        for key in to_remove:
+            self._flows.pop(key, None)
+        return expired
 
     def _extract_flow(self, packet) -> Tuple[Optional[FlowKey], Optional[FlowAccumulator]]:
         ip_layer = packet.getlayer(IP) if IP else None

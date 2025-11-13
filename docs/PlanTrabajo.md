@@ -59,7 +59,37 @@ Hoja de ruta viva para coordinar las tareas inmediatas del backend y frontend. E
   - Compartir recursos sólo entre miembros.  
 - Refactor de reportes/alertas para usar los nuevos propietarios de datos.  
 - Integración con despliegue en la nube (API central + agentes locales sincronizando).
+- Roles/permisos (prioridad media, antes del despliegue cloud):
+  - Definir niveles (`admin`, `operador`, `lectura`) y su alcance en API/frontend.
+  - Ajustar vistas y comandos para respetar permisos (ej. quién ejecuta capturas o borra dispositivos).
+  - Preparar migración para asignar rol inicial a usuarios existentes y documentar cómo cambiarlos.
+- Historiales largos (Detector/Agente):
+  - Implementar paginación/cursor para `analisis`, `hosts` y `agente/historial` (cargar primeros 20 y traer más al scrollear o con botón “ver más”).
+  - Documentar parámetros (`limit`, `page`, etc.) para que el front pueda recuperar todo el historial cuando crezca.
+- Refactors cuando las vistas queden completas:
+  - Extraer subcomponentes (tablas, resúmenes, formularios) a `src/features/**/components` para que los archivos de página no concentren toda la UI.
+  - Reorganizar carpetas por “feature” (ej. `features/detector`, `features/agente`) y mover hooks/servicios asociados allí.
+  - Documentar la convención y aplicar la limpieza cuando cada módulo tenga la funcionalidad base estable.
+- Retención de flujos de captura:
+  - Definir política para purgar/archivar `captura_flujo` (por edad o exportación a PCAP) y evitar que la BD crezca indefinidamente.
+  - Automatizar cleanup (management command + cron) y documentar el procedimiento.
+- Detalle de capturas activas:
+  - Separar vistas y métricas específicas para sesiones activas (acciones, latencias, objetivos) y definir qué estadísticas adicionales tienen sentido.
+  - Evaluar integración con módulo de Escáner para evitar duplicación de funcionalidad.
+
+### Notas para despliegue nube (referencia futura)
+- Backend/API:
+  - VPS (DO 1 vCPU/1GB) con Python 3.12, nginx, Gunicorn y, de ser posible, PostgreSQL.  
+  - Variables esenciales: `SECRET_KEY`, `ALLOWED_HOSTS`, `MONET_FRONTEND_ORIGIN`, `MONET_DEFAULT_OWNER`, nombres de cookies (`MONET_SESSION_COOKIE`, etc.).  
+  - Reverse proxy nginx + HTTPS (Let’s Encrypt) sirviendo `/api/` y `/admin/`.  
+  - Gunicorn apuntando a `backend.config.wsgi`.
+- Frontend:
+  - Build con `VITE_API_BASE_URL` apuntando al dominio público del backend.  
+  - Host estático (Netlify/Vercel) o el mismo nginx (`frontend/dist`).  
+  - Asegurar `CORS_ALLOWED_ORIGINS`/`CSRF_TRUSTED_ORIGINS` coincidan con el dominio final.
+- Agentes locales:
+  - Cada instalación exporta `MONET_DEFAULT_OWNER` (o usa `--owner`) para asociar datos.  
+  - Requiere usuario creado en la API (idealmente credenciales por agente/token a futuro).
+- Pendientes: script de bootstrap (crear usuario admin + `.env`), migrar a Postgres antes de producción, diseñar tokens específicos para agentes en lugar de reutilizar el superusuario.
 
 ---
-
-

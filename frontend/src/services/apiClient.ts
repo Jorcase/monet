@@ -2,6 +2,10 @@ const DEFAULT_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api"
 
 const API_BASE_URL = DEFAULT_BASE_URL.replace(/\/$/, "")
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"])
+
+let csrfToken: string | null = null
+let csrfPromise: Promise<string> | null = null
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE"
 
@@ -16,6 +20,7 @@ export interface RequestOptions<TBody = unknown> {
   query?: QueryParams
   signal?: AbortSignal
   skipJson?: boolean
+  csrf?: boolean
 }
 
 export class ApiError extends Error {
@@ -70,7 +75,15 @@ async function parseBody<T>(response: Response, skipJson?: boolean) {
 
 async function request<TResponse = unknown, TBody = unknown>(
   path: string,
-  { method = "GET", body, headers = {}, query, signal, skipJson }: RequestOptions<TBody> = {}
+  {
+    method = "GET",
+    body,
+    headers = {},
+    query,
+    signal,
+    skipJson,
+    csrf,
+  }: RequestOptions<TBody> = {}
 ): Promise<TResponse> {
   const url = buildUrl(path, query)
 
@@ -80,6 +93,7 @@ async function request<TResponse = unknown, TBody = unknown>(
       ...headers,
     },
     signal,
+    credentials: "include",
   }
 
   const isFormData = typeof FormData !== "undefined" && body instanceof FormData
@@ -96,15 +110,26 @@ async function request<TResponse = unknown, TBody = unknown>(
     }
   }
 
+  const needsCsrf = csrf ?? !SAFE_METHODS.has(method)
+  if (needsCsrf) {
+    const token = await ensureCsrfToken()
+    if (token) {
+      init.headers = {
+        ...init.headers,
+        "X-CSRFToken": token,
+      }
+    }
+  }
+
   const response = await fetch(url, init)
 
   if (!response.ok) {
-    let payload: unknown = null
-
+    const rawText = await response.text()
+    let payload: unknown = rawText
     try {
-      payload = await response.json()
+      payload = rawText ? JSON.parse(rawText) : rawText
     } catch {
-      payload = await response.text()
+      // keep raw text
     }
 
     throw new ApiError(
@@ -141,3 +166,36 @@ export const apiClient = {
 }
 
 export type ApiClient = typeof apiClient
+
+async function fetchCsrfFromServer() {
+  const response = await fetch(`${API_BASE_URL}/auth/csrf/`, {
+    credentials: "include",
+  })
+  if (!response.ok) {
+    throw new Error("No se pudo obtener el token CSRF")
+  }
+  const data = (await response.json()) as { csrfToken?: string }
+  csrfToken = data?.csrfToken ?? null
+  return csrfToken ?? ""
+}
+
+async function ensureCsrfToken(force = false): Promise<string> {
+  if (!force && csrfToken) {
+    return csrfToken
+  }
+  if (!force && csrfPromise) {
+    return csrfPromise
+  }
+  csrfPromise = fetchCsrfFromServer().finally(() => {
+    csrfPromise = null
+  })
+  return csrfPromise
+}
+
+export async function refreshCsrfToken(force = false) {
+  return ensureCsrfToken(force)
+}
+
+export function clearCsrfToken() {
+  csrfToken = null
+}

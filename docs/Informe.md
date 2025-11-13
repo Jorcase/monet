@@ -195,14 +195,40 @@ El sniffer ahora detecta hostnames desde DHCP/DNS/mDNS y los aplica al inventari
 instalacion de react, tailwind3
 instalacion de react-router-dom
 instalacion de shadcn y flowbite
-
+uso de bloques de shadcn para estructura general login y signup
 trabajando con la api para configurarla correctamente y autenticacion
 - se limpió la UI vieja de Django, quedando solo la API + admin.
 - agregamos endpoints `/api/auth/*` (csrf, login, logout, me, register) y probamos el flujo completo con curl usando el superusuario `monet`.
 - todos los modelos expuestos por la API ahora tienen `owner` y los viewsets filtran por `request.user`; los comandos (`detectar_hosts`, `capturar_*`, `escanea_puertos`, `evaluar_heuristicas`) aceptan `--owner` y usan `resolve_owner`.
 - configuramos CORS/cookies (`MONET_FRONTEND_ORIGIN`, `MONET_SESSION_COOKIE`, etc.) para que el front consuma la API usando sesiones.
+- por el momento esta pensado para que cada usuario solo pueda ver sus datos y no ajenos 
+# Anotaciones 121125
+- Integración completa del layout shadcn (sidebar y header) en el front nuevo: reemplazamos el shell previo por `AppSidebar`, `SiteHeader` con breadcrumbs dinámicos y `SidebarProvider`.
+- Login/Signup conectados a la API: formularios usan `AuthContext`, sesión se hidrata vía `/api/auth/me`, y las rutas protegidas redirigen según autenticación.
+- Módulos Agente y Detector listos en React:
+  - Hooks + servicios (`useAgentStatus`, `useDetectorAnalyses`, etc.) consumen los endpoints y manejan CSRF/errores.
+  - Cada página tiene cards de acción, historial paginado, tablas con smooth scroll y toasts (Sonner) para feedback.
+  - Se agregó paginación custom, combobox de ubicación, toasts centrados y tabla responsive para hosts.
+- Backend: endpoints de detector y agente ajustados para owner + slug de ubicación; migraciones nuevas para `AgenteLocal`.
+- Documentación/PlanTrabajo actualizados (nuevos pendientes: refactor por features y plan para módulo Captura).
+- Captura (pasiva y activa):
+  - API now lanza `run_passive_capture` y `run_active_probe` desde `/api/capturas/ejecutar/` (hilos, validación de parámetros, re-cómputo de estadísticas y contadores).
+  - UI renovada con cards independientes, filtros asistidos/avanzados, bloqueo de botones y toasts según estado, paginación con badges, botones para abortar y scroll suave al detalle.
+  - Detalles de sesión distinguen pasiva vs activa (estadísticas vs acciones registradas) y la columna de historial refleja el tipo y cantidad de acciones.
+# Anotaciones 131125
+- Detector / Inventario:
+  - El serializer de `Dispositivo` ahora expone `primera_vez` y `es_temporal`, y el viewset marca automáticamente como inactivos los registros con más de 30 min sin actualización antes de ordenar por `ultima_vez`.
+  - En el front reemplazamos la tabla manual por el data table de shadcn/tanstack (búsqueda, filtros, columns toggle, orden por defecto usando `ultima_vez`) y reorganizamos las columnas a: Estado · MAC · IP · Vendor · SO · Primera/Última vez.
+- Detalle de dispositivo:
+  - La card principal ocupa todo el ancho y muestra todos los campos disponibles (badges para estado, MAC aleatoria, temporalidad, fingerprint timestamps, etc.) con fechas formateadas.
+  - El historial ahora compara correctamente la IP vigente en cada momento (IP actual = IP de la fila anterior) y la tabla lista también la IP registrada, MAC, inicio/fin y motivo de la variación.
+  - La card de puertos queda debajo como placeholder hasta integrar el módulo de escaneo.
 
 
 # Tareas por hacer cuando funcione todo lo basico
+modulo agente:
+hacer que compartan mitad y mitad los cards
+agregar paginacion en el historial y mejorar el select para poner un nombre personalizado si uno quiere, pero bueno facilite los nombres tipicos, pero la capacidad de poner nose casa 1, casa 2
+
 5. Integracion nube
 6. Envio de correos/notificaciones, reportes pdf/csv, tareas programadas(cron/celery)

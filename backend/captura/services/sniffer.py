@@ -8,7 +8,7 @@ from django.utils import timezone
 from captura.models import CapturaSesion
 from captura.services.aggregator import CaptureUnavailable, FlowAggregator
 from captura.services.persistence import persist_flows
-from captura.services.session import increment_session_counters, mark_session_state
+from captura.services.session import increment_session_counters, mark_session_state, recompute_statistics
 from captura.services.hostname import extract_hostname_events
 from captura.services.enrichment import actualizar_hostname_por_captura
 
@@ -83,3 +83,8 @@ def run_passive_capture(
             bytes_totales=aggregator.total_bytes,
         )
         mark_session_state(sesion, estado="completada", fin=timezone.now())
+        try:
+            recompute_statistics(sesion)
+        except Exception:
+            # No interrumpimos la captura si la estadística falla; quedará sin resumen.
+            pass

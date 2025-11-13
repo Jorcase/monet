@@ -9,15 +9,15 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-export function NavMain({
-  items,
-}: {
+interface NavMainProps {
   items: {
     title: string
     url: string
     icon?: LucideIcon
   }[]
-}) {
+}
+
+export function NavMain({ items }: NavMainProps) {
   const location = useLocation()
 
   return (

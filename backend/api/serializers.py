@@ -2,8 +2,16 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
-from captura.models import CapturaSesion, CapturaFlujo
-from detector.models import Dispositivo
+from agente.models import AgenteLocal
+from captura.models import (
+    CapturaSesion,
+    CapturaFlujo,
+    CapturaArchivo,
+    CapturaEstadistica,
+    CapturaAccionActiva,
+    FingerprintObservacion,
+)
+from detector.models import Dispositivo, AnalisisRed, HostDetectado, DispositivoHistorial
 from escaner.models import TrabajoScanner, PuertoEncontrado, PuertoResumen
 from analitica.models import HeuristicaEvento
 
@@ -61,6 +69,7 @@ class DispositivoSerializer(serializers.ModelSerializer):
             "ip",
             "mac",
             "mac_aleatoria",
+            "es_temporal",
             "vendor",
             "estado",
             "tipo_dispositivo",
@@ -68,12 +77,16 @@ class DispositivoSerializer(serializers.ModelSerializer):
             "metodo_identificacion",
             "sistema_operativo",
             "fuente_fingerprint",
+            "primera_vez",
             "ultima_fingerprint",
             "ultima_vez",
         ]
 
 
 class CapturaFlujoSerializer(serializers.ModelSerializer):
+    dispositivo_origen = DispositivoSerializer(read_only=True)
+    dispositivo_destino = DispositivoSerializer(read_only=True)
+
     class Meta:
         model = CapturaFlujo
         fields = [
@@ -85,18 +98,92 @@ class CapturaFlujoSerializer(serializers.ModelSerializer):
             "dst_ip",
             "src_port",
             "dst_port",
+            "src_mac",
+            "dst_mac",
             "protocolo",
             "paquetes",
             "bytes",
+            "flag_syn",
+            "flag_fin",
+            "flag_rst",
             "ttl_promedio",
             "tcp_window_promedio",
             "tcp_mss",
             "tcp_opciones",
+            "payload_muestra",
+            "dispositivo_origen",
+            "dispositivo_destino",
+        ]
+
+
+class CapturaArchivoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CapturaArchivo
+        fields = [
+            "id",
+            "tipo",
+            "ruta",
+            "tamano_bytes",
+            "hash_archivo",
+            "protegido",
+            "expira_en",
+            "creado",
+        ]
+
+
+class CapturaEstadisticaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CapturaEstadistica
+        fields = [
+            "hosts_unicos",
+            "puertos_unicos",
+            "protocolos_top",
+            "ancho_banda_promedio",
+            "ancho_banda_pico",
+            "alertas_generadas",
+            "actualizado",
+        ]
+
+
+class CapturaAccionActivaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CapturaAccionActiva
+        fields = [
+            "id",
+            "tipo",
+            "objetivo",
+            "puerto",
+            "payload",
+            "resultado",
+            "exitoso",
+            "observaciones",
+            "ejecutada_en",
+        ]
+
+
+class FingerprintObservacionSerializer(serializers.ModelSerializer):
+    dispositivo = DispositivoSerializer(read_only=True)
+
+    class Meta:
+        model = FingerprintObservacion
+        fields = [
+            "id",
+            "metodo",
+            "sistema_estimado",
+            "version_estimado",
+            "probabilidad",
+            "evidencia",
+            "timestamp",
+            "dispositivo",
         ]
 
 
 class CapturaSesionSerializer(serializers.ModelSerializer):
-    flujos = CapturaFlujoSerializer(many=True, read_only=True)
+    estadistica_resumen = CapturaEstadisticaSerializer(source="estadistica", read_only=True)
+    tiene_estadistica = serializers.SerializerMethodField()
+    archivos_count = serializers.SerializerMethodField()
+    flujos_count = serializers.SerializerMethodField()
+    acciones_count = serializers.SerializerMethodField()
 
     class Meta:
         model = CapturaSesion
@@ -108,13 +195,44 @@ class CapturaSesionSerializer(serializers.ModelSerializer):
             "estado",
             "inicio",
             "fin",
+            "duracion_objetivo",
+            "filtro_bpf",
             "total_paquetes",
             "total_bytes",
             "paquetes_descartados",
             "ruta_pcap",
+            "hash_pcap",
             "observaciones",
-            "flujos",
+            "archivos_count",
+            "flujos_count",
+            "acciones_count",
+            "tiene_estadistica",
+            "estadistica_resumen",
         ]
+
+    def get_tiene_estadistica(self, obj: CapturaSesion) -> bool:
+        try:
+            return obj.estadistica is not None
+        except CapturaEstadistica.DoesNotExist:
+            return False
+
+    def get_archivos_count(self, obj: CapturaSesion) -> int:
+        annotated = getattr(obj, "archivos_count", None)
+        if annotated is not None:
+            return annotated
+        return obj.archivos.count()
+
+    def get_flujos_count(self, obj: CapturaSesion) -> int:
+        annotated = getattr(obj, "flujos_count", None)
+        if annotated is not None:
+            return annotated
+        return obj.flujos.count()
+
+    def get_acciones_count(self, obj: CapturaSesion) -> int:
+        annotated = getattr(obj, "acciones_count", None)
+        if annotated is not None:
+            return annotated
+        return obj.acciones_activas.count()
 
 
 class TrabajoScannerSerializer(serializers.ModelSerializer):
@@ -180,4 +298,87 @@ class HeuristicaEventoSerializer(serializers.ModelSerializer):
             "notificado",
             "ts",
             "dispositivo",
+        ]
+
+
+class AgenteLocalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AgenteLocal
+        fields = [
+            "id",
+            "interfaz",
+            "ip_local",
+            "cidr",
+            "mac",
+            "hostname",
+            "ultima_actualizacion",
+            "ubicacion",
+        ]
+
+
+class HostDetectadoSerializer(serializers.ModelSerializer):
+    device_info = serializers.SerializerMethodField()
+
+    class Meta:
+        model = HostDetectado
+        fields = [
+            "id",
+            "ip",
+            "mac",
+            "hostname",
+            "metodo_deteccion",
+            "latencia_ms",
+            "primera_vista",
+            "ultima_vista",
+            "notas",
+            "device_info",
+        ]
+
+    def get_device_info(self, obj: HostDetectado):
+        if not obj.mac:
+            return None
+        dispositivo = Dispositivo.objects.filter(mac__iexact=obj.mac).first()
+        if not dispositivo:
+            return None
+        return {
+            "id": dispositivo.id,
+            "vendor": dispositivo.vendor,
+            "mac_aleatoria": dispositivo.mac_aleatoria,
+            "primera_vez": dispositivo.primera_vez,
+            "ultima_vez": dispositivo.ultima_vez,
+            "estado": dispositivo.estado,
+        }
+
+
+class AnalisisRedSerializer(serializers.ModelSerializer):
+    hosts_detectados = HostDetectadoSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = AnalisisRed
+        fields = [
+            "id",
+            "inicio",
+            "fin",
+            "interfaz",
+            "tipo",
+            "total_hosts_detectados",
+            "duracion_ms",
+            "notas",
+            "hosts_detectados",
+        ]
+
+
+class DispositivoHistorialSerializer(serializers.ModelSerializer):
+    dispositivo = serializers.StringRelatedField()
+
+    class Meta:
+        model = DispositivoHistorial
+        fields = [
+            "id",
+            "dispositivo",
+            "ip",
+            "mac",
+            "inicio",
+            "fin",
+            "motivo",
         ]
