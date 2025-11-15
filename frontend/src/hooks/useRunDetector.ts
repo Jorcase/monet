@@ -10,12 +10,14 @@ export function useRunDetector() {
 
   const run = async (
     interfaz?: string,
-    tipo?: string
+    tipo?: string,
+    fingerprint_os?: boolean,
+    arpMode?: string
   ): Promise<DetectorAnalysis | null> => {
     setLoading(true)
     setError(null)
     try {
-      const analysis = await detectorService.runDetectorAnalysis(interfaz, tipo)
+      const analysis = await detectorService.runDetectorAnalysis(interfaz, tipo, fingerprint_os, arpMode)
       return analysis
     } catch (err) {
       setError(parseApiError(err, "No se pudo ejecutar el análisis de red."))

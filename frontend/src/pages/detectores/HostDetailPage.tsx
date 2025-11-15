@@ -124,6 +124,10 @@ export default function HostDetailPage() {
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <InfoRow label="Vendor" value={host.device_info.vendor || "Sin datos"} />
+              <InfoRow
+                label="Sistema operativo"
+                value={host.device_info.sistema_operativo || "Sin datos"}
+              />
               <InfoRow label="Primera vez" value={formatDate(host.device_info.primera_vez)} />
               <InfoRow label="Última vez" value={formatDate(host.device_info.ultima_vez)} />
             </div>

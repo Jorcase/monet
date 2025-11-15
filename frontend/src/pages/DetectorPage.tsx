@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { Pagination } from "@/components/ui/pagination"
 import { useDetectorAnalyses } from "@/hooks/useDetectorAnalyses"
 import { useDetectorHosts } from "@/hooks/useDetectorHosts"
@@ -26,13 +27,14 @@ import { useRunDetector } from "@/hooks/useRunDetector"
 import type { DetectorHost } from "@/types/detector"
 import { cn } from "@/lib/utils"
 
-const ANALYSIS_TYPES = [
-  { value: "escaner-activo", label: "ARP (escáner activo)" },
+const ARP_MODES = [
+  { value: "rapido", label: "ARP rápido" },
+  { value: "completo", label: "ARP completo" },
 ]
 const PAGE_SIZE = 5
 
 export default function DetectorPage() {
-  const { analyses, loading, error, reload } = useDetectorAnalyses(10)
+  const { analyses, loading, error, reload } = useDetectorAnalyses(100)
   const [activeAnalysisId, setActiveAnalysisId] = useState<number | undefined>()
   const [page, setPage] = useState(1)
   const activeAnalysis = useMemo(
@@ -45,7 +47,8 @@ export default function DetectorPage() {
   })
   const { run, loading: running, error: runError } = useRunDetector()
   const [interfaceValue, setInterfaceValue] = useState("")
-  const [analysisType, setAnalysisType] = useState(ANALYSIS_TYPES[0].value)
+  const [arpMode, setArpMode] = useState(ARP_MODES[0].value)
+  const [fingerprintOs, setFingerprintOs] = useState(false)
   const [selectedHost, setSelectedHost] = useState<DetectorHost | null>(null)
   const detailRef = useRef<HTMLDivElement | null>(null)
   const hostDetailRef = useRef<HTMLDivElement | null>(null)
@@ -75,7 +78,7 @@ export default function DetectorPage() {
   const handleRun = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const iface = interfaceValue.trim()
-    const promise = run(iface || undefined, analysisType)
+    const promise = run(iface || undefined, "escaner-activo", fingerprintOs, arpMode)
     toast.promise(promise, {
       loading: "Ejecutando análisis...",
       success: "Análisis completado correctamente",
@@ -136,13 +139,13 @@ export default function DetectorPage() {
           <CardContent>
             <form className="space-y-4" onSubmit={handleRun}>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Tipo</label>
-                <Select value={analysisType} onValueChange={setAnalysisType}>
+                <label className="text-sm font-medium text-foreground">Modo ARP</label>
+                <Select value={arpMode} onValueChange={setArpMode}>
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar tipo" />
                   </SelectTrigger>
                   <SelectContent>
-                    {ANALYSIS_TYPES.map((type) => (
+                    {ARP_MODES.map((type) => (
                       <SelectItem key={type.value} value={type.value}>
                         {type.label}
                       </SelectItem>
@@ -161,6 +164,15 @@ export default function DetectorPage() {
                   Si lo dejás vacío, se usará la primera interfaz IPv4 válida.
                 </p>
               </div>
+              <label className="flex items-center justify-between rounded border px-3 py-2 text-sm">
+                <div>
+                  <p className="font-medium">Intentar fingerprint activo</p>
+                  <p className="text-xs text-muted-foreground">
+                    Ejecuta <code>nmap -O</code> por cada host para estimar el sistema operativo.
+                  </p>
+                </div>
+                <Switch checked={fingerprintOs} onCheckedChange={setFingerprintOs} />
+              </label>
               {runError ? (
                 <p className="text-sm text-destructive" role="alert">
                   {runError}
@@ -402,6 +414,10 @@ const HostDetailCard = forwardRef<HTMLDivElement, { host: DetectorHost | null }>
           <DetailItem label="IP" value={host.ip} />
           <DetailItem label="Hostname" value={host.hostname || "Sin hostname"} />
           <DetailItem label="Vendor" value={device?.vendor || "Desconocido"} />
+          <DetailItem
+            label="Sistema operativo"
+            value={device?.sistema_operativo || "Sin datos"}
+          />
           <DetailItem
             label="Latencia"
             value={host.latencia_ms !== null ? `${host.latencia_ms} ms` : "N/A"}

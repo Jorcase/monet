@@ -55,10 +55,17 @@ export async function fetchDeviceHistory(dispositivoId: number) {
   )
 }
 
-export async function runDetectorAnalysis(interfaz?: string, tipo?: string) {
+export async function runDetectorAnalysis(
+  interfaz?: string,
+  tipo?: string,
+  fingerprint_os?: boolean,
+  arp_mode?: string
+) {
   return apiClient.post<DetectorAnalysis>("/detector/ejecutar/", {
     ...(interfaz ? { interfaz } : {}),
     ...(tipo ? { tipo } : {}),
+    ...(fingerprint_os ? { fingerprint_os: true } : {}),
+    ...(arp_mode ? { arp_mode } : {}),
   })
 }
 

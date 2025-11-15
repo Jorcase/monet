@@ -11,7 +11,14 @@ import {
 import { ChevronDown, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
@@ -22,33 +29,33 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import type { DetectorDevice } from "@/types/detector"
+import type { ScannerPort } from "@/types/scanner"
 
-import type { DeviceTableMeta } from "./device-columns"
-import { deviceColumns } from "./device-columns"
+import type { PortTableMeta } from "./port-columns"
+import { portColumns } from "./port-columns"
 
-type DevicesDataTableProps = {
-  data: DetectorDevice[]
+type PortsDataTableProps = {
+  data: ScannerPort[]
   loading?: boolean
   error?: string | null
-  onRowClick?: (device: DetectorDevice) => void
+  onRowClick?: (port: ScannerPort) => void
 }
 
-const STATUS_OPTIONS = [
+const STATE_OPTIONS = [
   { label: "Todos", value: "todos" },
-  { label: "Activo", value: "activo" },
-  { label: "Inactivo", value: "inactivo" },
-  { label: "Desconocido", value: "desconocido" },
+  { label: "Abierto", value: "abierto" },
+  { label: "Filtrado", value: "filtrado" },
+  { label: "Cerrado", value: "cerrado" },
 ]
 
-export function DevicesDataTable({ data, loading, error, onRowClick }: DevicesDataTableProps) {
-  const [sorting, setSorting] = useState<SortingState>([{ id: "ultima_vez", desc: true }])
+export function PortsDataTable({ data, loading, error, onRowClick }: PortsDataTableProps) {
+  const [sorting, setSorting] = useState<SortingState>([{ id: "detected_at", desc: true }])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({ search: false })
 
   const table = useReactTable({
     data,
-    columns: deviceColumns,
+    columns: portColumns,
     state: {
       sorting,
       columnFilters,
@@ -66,15 +73,17 @@ export function DevicesDataTable({ data, loading, error, onRowClick }: DevicesDa
         pageSize: 12,
       },
       columnVisibility: { search: false },
-      sorting: [{ id: "ultima_vez", desc: true }],
+      sorting: [{ id: "detected_at", desc: true }],
     },
     meta: {
-      onView: (device: DetectorDevice) => onRowClick?.(device),
-    } satisfies DeviceTableMeta,
+      onView: (port: ScannerPort) => onRowClick?.(port),
+    } satisfies PortTableMeta,
   })
 
   const searchColumn = table.getColumn("search")
-  const statusColumn = table.getColumn("estado")
+  const stateColumn = table.getColumn("estado")
+  const jobColumn = table.getColumn("trabajo")
+
   const pagination = table.getState().pagination
   const pageRows = table.getRowModel().rows.length
   const rangeStart = pageRows ? pagination.pageIndex * pagination.pageSize + 1 : 0
@@ -83,31 +92,39 @@ export function DevicesDataTable({ data, loading, error, onRowClick }: DevicesDa
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
         <Input
-          placeholder="Buscar por IP, MAC, Vendor..."
+          placeholder="Buscar por host, servicio, protocolo u objetivo..."
           value={(searchColumn?.getFilterValue() as string) ?? ""}
           onChange={(event) => searchColumn?.setFilterValue(event.target.value)}
-          className="w-full md:max-w-sm"
+          className="w-full lg:max-w-sm"
         />
         <Select
-          value={(statusColumn?.getFilterValue() as string) ?? "todos"}
-          onValueChange={(value) => statusColumn?.setFilterValue(value)}
+          value={(stateColumn?.getFilterValue() as string) ?? "todos"}
+          onValueChange={(value) => stateColumn?.setFilterValue(value)}
         >
-          <SelectTrigger className="md:w-[190px]">
+          <SelectTrigger className="w-full lg:w-[160px]">
             <SelectValue placeholder="Estado" />
           </SelectTrigger>
           <SelectContent>
-            {STATUS_OPTIONS.map((option) => (
+            {STATE_OPTIONS.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
+        <Input
+          type="number"
+          min={1}
+          placeholder="Trabajo #"
+          value={(jobColumn?.getFilterValue() as string) ?? ""}
+          onChange={(event) => jobColumn?.setFilterValue(event.target.value)}
+          className="w-full lg:w-32"
+        />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto w-full md:w-auto">
+            <Button variant="outline" className="ml-auto w-full lg:w-auto">
               Columnas
               <ChevronDown className="ml-1.5 h-4 w-4" />
             </Button>
@@ -153,7 +170,7 @@ export function DevicesDataTable({ data, loading, error, onRowClick }: DevicesDa
                 <TableCell colSpan={table.getAllLeafColumns().length} className="h-24 text-center">
                   <div className="flex items-center justify-center gap-2 text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Cargando dispositivos...
+                    Cargando puertos...
                   </div>
                 </TableCell>
               </TableRow>
@@ -191,8 +208,8 @@ export function DevicesDataTable({ data, loading, error, onRowClick }: DevicesDa
       <div className="flex flex-col gap-3 py-2 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
         <div>
           {pageRows
-            ? `Mostrando ${rangeStart}–${rangeEnd} de ${totalFiltered} dispositivos`
-            : "Sin resultados para mostrar."}
+            ? `Mostrando ${rangeStart}–${rangeEnd} de ${totalFiltered} puertos`
+            : "Sin puertos para mostrar."}
         </div>
         <div className="flex items-center gap-2">
           <Button

@@ -8,12 +8,11 @@ from captura.models import (
     CapturaFlujo,
     CapturaArchivo,
     CapturaEstadistica,
-    CapturaAccionActiva,
     FingerprintObservacion,
 )
 from detector.models import Dispositivo, AnalisisRed, HostDetectado, DispositivoHistorial
 from escaner.models import TrabajoScanner, PuertoEncontrado, PuertoResumen
-from analitica.models import HeuristicaEvento
+from analitica.models import HeuristicaEvento, HeuristicaRegla
 
 User = get_user_model()
 
@@ -145,22 +144,6 @@ class CapturaEstadisticaSerializer(serializers.ModelSerializer):
         ]
 
 
-class CapturaAccionActivaSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CapturaAccionActiva
-        fields = [
-            "id",
-            "tipo",
-            "objetivo",
-            "puerto",
-            "payload",
-            "resultado",
-            "exitoso",
-            "observaciones",
-            "ejecutada_en",
-        ]
-
-
 class FingerprintObservacionSerializer(serializers.ModelSerializer):
     dispositivo = DispositivoSerializer(read_only=True)
 
@@ -183,7 +166,6 @@ class CapturaSesionSerializer(serializers.ModelSerializer):
     tiene_estadistica = serializers.SerializerMethodField()
     archivos_count = serializers.SerializerMethodField()
     flujos_count = serializers.SerializerMethodField()
-    acciones_count = serializers.SerializerMethodField()
 
     class Meta:
         model = CapturaSesion
@@ -205,7 +187,6 @@ class CapturaSesionSerializer(serializers.ModelSerializer):
             "observaciones",
             "archivos_count",
             "flujos_count",
-            "acciones_count",
             "tiene_estadistica",
             "estadistica_resumen",
         ]
@@ -227,12 +208,6 @@ class CapturaSesionSerializer(serializers.ModelSerializer):
         if annotated is not None:
             return annotated
         return obj.flujos.count()
-
-    def get_acciones_count(self, obj: CapturaSesion) -> int:
-        annotated = getattr(obj, "acciones_count", None)
-        if annotated is not None:
-            return annotated
-        return obj.acciones_activas.count()
 
 
 class TrabajoScannerSerializer(serializers.ModelSerializer):
@@ -268,6 +243,7 @@ class PuertoEncontradoSerializer(serializers.ModelSerializer):
 
 class PuertoResumenSerializer(serializers.ModelSerializer):
     dispositivo = DispositivoSerializer(read_only=True)
+    ultima_trabajo_id = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = PuertoResumen
@@ -281,23 +257,47 @@ class PuertoResumenSerializer(serializers.ModelSerializer):
             "primera_detectado",
             "ultima_detectado",
             "dispositivo",
+            "ultima_trabajo_id",
+        ]
+
+
+class HeuristicaReglaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HeuristicaRegla
+        fields = [
+            "id",
+            "nombre",
+            "modulo_objetivo",
+            "tipo",
+            "descripcion",
+            "severidad_por_defecto",
+            "parametros",
+            "activa",
+            "creada",
+            "actualizada",
         ]
 
 
 class HeuristicaEventoSerializer(serializers.ModelSerializer):
     dispositivo = DispositivoSerializer(read_only=True)
+    regla_detalle = HeuristicaReglaSerializer(source="regla", read_only=True)
 
     class Meta:
         model = HeuristicaEvento
         fields = [
             "id",
             "regla",
+            "regla_detalle",
             "severidad",
             "descripcion",
             "evidencia",
             "notificado",
             "ts",
             "dispositivo",
+            "captura_sesion",
+            "captura_flujo",
+            "analisis",
+            "puerto_resumen",
         ]
 
 
@@ -317,12 +317,14 @@ class AgenteLocalSerializer(serializers.ModelSerializer):
 
 
 class HostDetectadoSerializer(serializers.ModelSerializer):
+    analisis_id = serializers.IntegerField(read_only=True)
     device_info = serializers.SerializerMethodField()
 
     class Meta:
         model = HostDetectado
         fields = [
             "id",
+            "analisis_id",
             "ip",
             "mac",
             "hostname",
@@ -347,6 +349,8 @@ class HostDetectadoSerializer(serializers.ModelSerializer):
             "primera_vez": dispositivo.primera_vez,
             "ultima_vez": dispositivo.ultima_vez,
             "estado": dispositivo.estado,
+            "sistema_operativo": dispositivo.sistema_operativo,
+            "fuente_fingerprint": dispositivo.fuente_fingerprint,
         }
 
 

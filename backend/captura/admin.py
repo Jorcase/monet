@@ -5,15 +5,14 @@ from captura.models import (
     CapturaArchivo,
     CapturaFlujo,
     CapturaEstadistica,
-    CapturaAccionActiva,
     FingerprintObservacion,
 )
 
 
 @admin.register(CapturaSesion)
 class CapturaSesionAdmin(admin.ModelAdmin):
-    list_display = ("id", "interfaz", "modo", "estado", "inicio", "fin", "total_paquetes")
-    list_filter = ("modo", "estado")
+    list_display = ("id", "interfaz", "estado", "inicio", "fin", "total_paquetes")
+    list_filter = ("estado",)
     search_fields = ("interfaz", "notas")
 
 
@@ -34,12 +33,6 @@ class CapturaFlujoAdmin(admin.ModelAdmin):
 class CapturaEstadisticaAdmin(admin.ModelAdmin):
     list_display = ("sesion", "hosts_unicos", "puertos_unicos", "ancho_banda_promedio", "alertas_generadas")
 
-
-@admin.register(CapturaAccionActiva)
-class CapturaAccionActivaAdmin(admin.ModelAdmin):
-    list_display = ("id", "sesion", "tipo", "objetivo", "puerto", "exitoso", "ejecutada_en")
-    list_filter = ("tipo", "exitoso")
-    search_fields = ("objetivo",)
 
 
 @admin.register(FingerprintObservacion)

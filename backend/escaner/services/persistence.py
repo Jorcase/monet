@@ -5,7 +5,8 @@ from django.utils import timezone
 
 from escaner.models import TrabajoScanner, PuertoEncontrado, PuertoResumen
 from analitica.models import HeuristicaRegla, HeuristicaEvento
-from analitica.services.engine import construir_eventos_cambio_puerto
+from analitica.services import evaluar_reglas_globales
+from analitica.services.engine import construir_eventos_cambio_puerto, construir_eventos_estado_puerto
 from detector.models import HostDetectado, Dispositivo
 
 @transaction.atomic
@@ -33,7 +34,15 @@ def guardar_resultados(
             parametros__tipo="cambio_puerto",
         )
     )
+    reglas_estado = list(
+        HeuristicaRegla.objects.filter(
+            modulo_objetivo__in=["escaner", "global"],
+            activa=True,
+            parametros__tipo="estado_puerto",
+        )
+    )
     eventos_cambio: list[HeuristicaEvento] = []
+    eventos_estado: list[HeuristicaEvento] = []
 
     for entry in resultados:
         host_ip = entry["host"]
@@ -62,7 +71,7 @@ def guardar_resultados(
         ).first()
 
         if resumen is None:
-            PuertoResumen.objects.create(
+            resumen = PuertoResumen.objects.create(
                 dispositivo=dispositivo,
                 host_ip=host_ip,
                 puerto=entry["puerto"],
@@ -74,15 +83,9 @@ def guardar_resultados(
                 ultima_trabajo=trabajo,
             )
         else:
-            nuevo_estado = resumen.estado
-            if entry["estado"] == "abierto":
-                nuevo_estado = "abierto"
-            elif trabajo.tipo_scan == "personalizado":
-                nuevo_estado = entry["estado"]
-            elif resumen.estado not in {"abierto"}:
-                nuevo_estado = entry["estado"]
-
             estado_anterior = resumen.estado
+            nuevo_estado = entry["estado"]
+
             if nuevo_estado != resumen.estado:
                 resumen.estado = nuevo_estado
                 if reglas_cambio:
@@ -106,8 +109,28 @@ def guardar_resultados(
             resumen.ultima_trabajo = trabajo
             resumen.save(update_fields=["estado", "servicio", "ultima_detectado", "ultima_trabajo"])
 
+        if reglas_estado:
+            eventos_estado.extend(
+                construir_eventos_estado_puerto(
+                    reglas_estado,
+                    resumen,
+                    trabajo,
+                    entry,
+                    owner=_select_owner(
+                        trabajo.owner,
+                        resumen.dispositivo.owner if resumen.dispositivo else None,
+                        trabajo.analisis.owner if trabajo.analisis else None,
+                    ),
+                )
+            )
+
     if eventos_cambio:
         HeuristicaEvento.objects.bulk_create(eventos_cambio)
+    if eventos_estado:
+        HeuristicaEvento.objects.bulk_create(eventos_estado)
+
+    if reglas_cambio or reglas_estado:
+        evaluar_reglas_globales(owner=trabajo.owner)
 
 
 def _select_owner(*owners):

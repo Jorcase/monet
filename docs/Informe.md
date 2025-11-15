@@ -224,7 +224,19 @@ trabajando con la api para configurarla correctamente y autenticacion
   - El historial ahora compara correctamente la IP vigente en cada momento (IP actual = IP de la fila anterior) y la tabla lista también la IP registrada, MAC, inicio/fin y motivo de la variación.
   - La card de puertos queda debajo como placeholder hasta integrar el módulo de escaneo.
   - correcion en el modulo agente en el select ahora se puede elegir cualquier tipo de nombres o los tipicos. Tooltip en S0 en detalle de dispositivo
-
+# Anotaciones 141125
+- Reorganización del módulo Captura:
+  - Eliminamos toda la lógica de captura activa (command, servicio y referencias en el admin/modelos) y simplificamos los servicios pasivos (`sniffer`, `aggregator`, `session`). El serializer/servicio ahora sólo expone modos pasivos y se añadió la migración `0003` para limpiar los campos.
+  - La página `CapturePage` reflejó estos cambios: sólo ofrece captura pasiva, se quitaron los botones/acciones activas y se mejoró el historial (tabla unificada, scroll suave y estados de carga). El servicio `captureService` se actualizó en consecuencia.
+- Detector/Escáner/Dispositivos:
+  - `arp_scan` incorporó un modo completo (múltiples intentos y timestamps) y Persistence guarda la nueva métrica; `useRunDetector` y la UI muestran el modo seleccionado y mueven el atributo “Sistema Operativo” a detalle de host.
+  - `DevicesPage` y `HostsPage` usan data tables responsive; los detalles de dispositivo consumen `puertos-resumen` y muestran los puertos asociados.
+  - `scannerService` + hooks (`useRunScanner`, `useScannerJobs/Ports/Summary`) y la nueva `ScannerPage` permiten seleccionar objetivos (IPs manuales, dispositivos activos, análisis recientes), definir tipos de escaneo (top, completo, personalizado), lanzar trabajos, ver historial con paginación/smooth scroll y abrir el detalle del trabajo con la lista de puertos detectados.
+  - En el backend `persistence.py` ahora actualiza el estado real de cada puerto, dispara eventos “cambio/estado de puerto” y `engine.py` valida pares de cambios según la regla.
+- Alertas y UI global:
+  - Se creó `analyticsService` y hooks para reglas/eventos; nuevas páginas (`/alertas/reglas`, `/alertas/eventos`) permiten listar, filtrar, editar y marcar eventos como notificados con scroll animado al detalle.
+  - El sidebar y el header incluyen el botón de tema (`ThemeToggle`) y la campana (`AlertBell`). El popover muestra las alertas pendientes, permite marcarlas individualmente o todas juntas, y consume el endpoint `POST /api/alertas/<id>/notificado/` agregado para resolver los 404. También se integró un contador que sólo considera severidades media/alta/crítica.
+  - Actualizamos `App.tsx` para registrar las nuevas rutas y mantenemos `Sonner` con soporte de tema.
 # Tareas por hacer cuando funcione todo lo basico
 
 

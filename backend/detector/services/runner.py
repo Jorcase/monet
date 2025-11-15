@@ -18,6 +18,9 @@ def run_detector_scan(
     interface: str | None = None,
     owner_username: str | None = None,
     scan_type: str | None = None,
+    fingerprint_os: bool = False,
+    arp_attempts: int | None = None,
+    arp_rest: float | None = None,
 ) -> AnalisisRed:
     """
     Ejecuta el mismo flujo que el management command `detectar_hosts`.
@@ -48,6 +51,8 @@ def run_detector_scan(
             snapshot.network,
             interfaz,
             local_ip=snapshot.ip_local,
+            attempts=arp_attempts,
+            rest=arp_rest or 0.0,
         )
         local_host = build_local_host_entry(snapshot)
         if local_host and not any(h["ip"] == local_host["ip"] for h in hosts):
@@ -61,4 +66,10 @@ def run_detector_scan(
     analisis.fin = timezone.now()
     analisis.duracion_ms = int(duracion_total_ms)
     analisis.save(update_fields=["total_hosts_detectados", "fin", "duracion_ms"])
+
+    if fingerprint_os:
+        from detector.services.os_fingerprint import fingerprint_hosts_with_nmap
+
+        fingerprint_hosts_with_nmap(hosts, owner=owner)
+
     return analisis

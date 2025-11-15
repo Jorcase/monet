@@ -1,3 +1,4 @@
+import { useMemo } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { ArrowLeft, Info, Loader2 } from "lucide-react"
 
@@ -15,6 +16,7 @@ import {
 } from "@/components/ui/table"
 import { useDevice } from "@/hooks/useDevice"
 import { useDeviceHistory } from "@/hooks/useDeviceHistory"
+import { useScannerSummary } from "@/hooks/useScannerSummary"
 
 const STATUS_LABELS: Record<string, string> = {
   activo: "Activo",
@@ -33,6 +35,15 @@ export default function DeviceDetailPage() {
     loading: historyLoading,
     error: historyError,
   } = useDeviceHistory(Number.isFinite(deviceId) ? deviceId : undefined)
+  const summaryFilters = useMemo(
+    () => (Number.isFinite(deviceId) ? { dispositivo_id: deviceId } : undefined),
+    [deviceId]
+  )
+  const {
+    summary: portsSummary,
+    loading: portsLoading,
+    error: portsError,
+  } = useScannerSummary(summaryFilters)
 
   if (!Number.isFinite(deviceId)) {
     return (
@@ -131,12 +142,57 @@ export default function DeviceDetailPage() {
             <CardHeader>
               <CardTitle>Puertos asociados</CardTitle>
               <CardDescription>
-                Este bloque mostrará los puertos aprendidos cuando integremos el escáner.
+                Consolidado de puertos observados por el escáner sobre este dispositivo.
               </CardDescription>
             </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              Estamos consolidando los puertos descubiertos por el módulo de escaneo. Muy pronto vas
-              a poder verlos acá y exportarlos para documentación.
+            <CardContent>
+              {portsLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Cargando puertos...
+                </div>
+              ) : portsError ? (
+                <p className="text-sm text-destructive">{portsError}</p>
+              ) : portsSummary.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Todavía no se registraron puertos para este dispositivo.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Host</TableHead>
+                      <TableHead>Puerto</TableHead>
+                      <TableHead>Protocolo</TableHead>
+                      <TableHead>Servicio</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead>Primera detección</TableHead>
+                      <TableHead>Última detección</TableHead>
+                      <TableHead>Trabajo</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {portsSummary.map((port) => (
+                      <TableRow key={`${port.host_ip}-${port.puerto}-${port.protocolo}`}>
+                        <TableCell>{port.host_ip}</TableCell>
+                        <TableCell>{port.puerto}</TableCell>
+                        <TableCell>{port.protocolo.toUpperCase()}</TableCell>
+                        <TableCell>{port.servicio || "—"}</TableCell>
+                        <TableCell>
+                          <Badge variant={stateToVariant(port.estado)} className="font-normal capitalize">
+                            {port.estado}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{formatDate(port.primera_detectado)}</TableCell>
+                        <TableCell>{formatDate(port.ultima_detectado)}</TableCell>
+                        <TableCell>
+                          {port.ultima_trabajo_id ? `#${port.ultima_trabajo_id}` : "—"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
 
@@ -279,4 +335,17 @@ function statusToVariant(status: string): "default" | "secondary" | "outline" | 
 
 function formatBoolean(value: boolean) {
   return value ? "Sí" : "No"
+}
+
+function stateToVariant(estado: string): "default" | "secondary" | "outline" {
+  switch (estado) {
+    case "abierto":
+      return "default"
+    case "filtrado":
+      return "secondary"
+    case "cerrado":
+      return "outline"
+    default:
+      return "secondary"
+  }
 }

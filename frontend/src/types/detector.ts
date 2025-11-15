@@ -20,6 +20,7 @@ export interface DetectorDevice {
 
 export interface DetectorHost {
   id: number
+  analisis_id: number
   ip: string
   mac: string
   hostname: string
@@ -35,6 +36,8 @@ export interface DetectorHost {
     primera_vez: string
     ultima_vez: string
     estado: string
+    sistema_operativo?: string
+    fuente_fingerprint?: string
   } | null
 }
 

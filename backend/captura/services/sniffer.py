@@ -9,13 +9,18 @@ from captura.models import CapturaSesion
 from captura.services.aggregator import CaptureUnavailable, FlowAggregator
 from captura.services.persistence import persist_flows
 from captura.services.session import increment_session_counters, mark_session_state, recompute_statistics
-from captura.services.hostname import extract_hostname_events
-from captura.services.enrichment import actualizar_hostname_por_captura
+from captura.services.fingerprint import generar_fingerprints_para_sesion
+from captura.services.enrichment import actualizar_dispositivos_con_fingerprints
 
-try:
-    from scapy.all import sniff
-except ImportError:  # pragma: no cover
+import os
+
+if os.environ.get("SCAPY_SKIP_RUNTIME") == "1":
     sniff = None
+else:
+    try:
+        from scapy.all import sniff
+    except ImportError:  # pragma: no cover
+        sniff = None
 
 
 def run_passive_capture(
@@ -53,13 +58,6 @@ def run_passive_capture(
         ready = aggregator.consume(packet)
         if ready:
             persist_flows(sesion, ready)
-        for evento in extract_hostname_events(packet):
-            actualizar_hostname_por_captura(
-                evento.get("ip"),
-                evento.get("hostname"),
-                source=evento.get("source", "captura"),
-                mac=evento.get("mac"),
-            )
         if stop_event and stop_event.is_set():
             raise KeyboardInterrupt
 
@@ -86,5 +84,13 @@ def run_passive_capture(
         try:
             recompute_statistics(sesion)
         except Exception:
-            # No interrumpimos la captura si la estadística falla; quedará sin resumen.
+            pass
+        try:
+            nuevos = generar_fingerprints_para_sesion(sesion)
+            if nuevos:
+                from captura.models import FingerprintObservacion
+
+                obs = FingerprintObservacion.objects.filter(sesion=sesion)
+                actualizar_dispositivos_con_fingerprints(obs)
+        except Exception:
             pass

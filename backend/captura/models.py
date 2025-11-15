@@ -6,8 +6,6 @@ from django.utils import timezone
 class CapturaSesion(models.Model):
     MODO_CHOICES = [
         ("pasiva", "Pasiva"),
-        ("activa", "Activa"),
-        ("mixta", "Mixta"),
     ]
 
     ORIGEN_CHOICES = [
@@ -173,37 +171,6 @@ class CapturaEstadistica(models.Model):
     def __str__(self) -> str:
         return f"Resumen sesión #{self.sesion_id}"
 
-
-class CapturaAccionActiva(models.Model):
-    TIPO_CHOICES = [
-        ("tcp_syn", "TCP SYN"),
-        ("udp_probe", "UDP Probe"),
-        ("custom", "Payload personalizado"),
-        ("otro", "Otro"),
-    ]
-
-    sesion = models.ForeignKey(
-        CapturaSesion,
-        on_delete=models.CASCADE,
-        related_name="acciones_activas",
-    )
-    tipo = models.CharField(max_length=16, choices=TIPO_CHOICES, default="tcp_syn")
-    objetivo = models.CharField(max_length=255)
-    puerto = models.PositiveIntegerField(null=True, blank=True)
-    payload = models.TextField(blank=True)
-    resultado = models.JSONField(blank=True, default=dict)
-    exitoso = models.BooleanField(default=True)
-    observaciones = models.TextField(blank=True)
-    ejecutada_en = models.DateTimeField(default=timezone.now)
-
-    class Meta:
-        db_table = "captura_accion_activa"
-        verbose_name = "Acción activa de captura"
-        verbose_name_plural = "Acciones activas de captura"
-        ordering = ("-ejecutada_en",)
-
-    def __str__(self) -> str:
-        return f"{self.get_tipo_display()} -> {self.objetivo}"
 
 class FingerprintObservacion(models.Model):
     METODO_CHOICES = [

@@ -13,7 +13,6 @@ import { ChevronDown, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Table,
   TableBody,
@@ -26,15 +25,6 @@ import type { DetectorHost } from "@/types/detector"
 
 import type { HostTableMeta } from "./host-columns"
 import { hostColumns } from "./host-columns"
-
-const METHOD_OPTIONS = [
-  { label: "Todos", value: "todos" },
-  { label: "ARP", value: "arp" },
-  { label: "Ping", value: "ping" },
-  { label: "Nmap", value: "nmap" },
-  { label: "Pasivo", value: "passive" },
-  { label: "Otro", value: "otro" },
-]
 
 type HostsDataTableProps = {
   data: DetectorHost[]
@@ -74,7 +64,7 @@ export function HostsDataTable({ data, loading, error, onRowClick }: HostsDataTa
   })
 
   const searchColumn = table.getColumn("search")
-  const methodColumn = table.getColumn("metodo_deteccion")
+  const analysisColumn = table.getColumn("analisis_id")
 
   const pagination = table.getState().pagination
   const pageRows = table.getRowModel().rows.length
@@ -89,23 +79,17 @@ export function HostsDataTable({ data, loading, error, onRowClick }: HostsDataTa
           placeholder="Buscar por hostname, IP, MAC..."
           value={(searchColumn?.getFilterValue() as string) ?? ""}
           onChange={(event) => searchColumn?.setFilterValue(event.target.value)}
-          className="md:max-w-sm"
+          className="w-full md:max-w-sm"
         />
-        <Select
-          value={(methodColumn?.getFilterValue() as string) ?? "todos"}
-          onValueChange={(value) => methodColumn?.setFilterValue(value)}
-        >
-          <SelectTrigger className="md:w-[190px]">
-            <SelectValue placeholder="Método" />
-          </SelectTrigger>
-          <SelectContent>
-            {METHOD_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Input
+          placeholder="Filtrar por análisis (#)"
+          value={(analysisColumn?.getFilterValue() as string) ?? ""}
+          onChange={(event) => {
+            const value = event.target.value
+            analysisColumn?.setFilterValue(value.trim() || undefined)
+          }}
+          className="w-full md:max-w-[160px]"
+        />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="ml-auto w-full md:w-auto">
@@ -133,7 +117,7 @@ export function HostsDataTable({ data, loading, error, onRowClick }: HostsDataTa
         </DropdownMenu>
       </div>
 
-      <div className="overflow-x-auto rounded-md border">
+      <div className="w-full overflow-x-auto rounded-md border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

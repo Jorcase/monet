@@ -21,6 +21,8 @@ def persist_scan_results(analisis: AnalisisRed, hosts: list[dict], owner=None) -
         hostname = host.get("hostname", "")
         mac_random = host.get("mac_aleatoria", False)
         latencia = host.get("latencia_ms")
+        primera = host.get("first_seen")
+        ultima = host.get("last_seen") or ahora
         
         host_obj, creado =  HostDetectado.objects.update_or_create(
             analisis=analisis,
@@ -30,14 +32,18 @@ def persist_scan_results(analisis: AnalisisRed, hosts: list[dict], owner=None) -
                 "metodo_deteccion": metodo,
                 "latencia_ms": latencia,
                 "hostname": hostname,
-                "ultima_vista": ahora,
+                "ultima_vista": ultima,
+                **({"primera_vista": primera} if primera else {}),
             }
         )
         if creado:
-            host_obj.primera_vista = ahora
+            host_obj.primera_vista = primera or ahora
             host_obj.save(update_fields=["primera_vista"])
             resumen["nuevos"] += 1
         else:
+            if ultima and ultima > host_obj.ultima_vista:
+                host_obj.ultima_vista = ultima
+                host_obj.save(update_fields=["ultima_vista"])
             resumen["actualizados"] += 1
         
         if not mac:
@@ -61,7 +67,7 @@ def persist_scan_results(analisis: AnalisisRed, hosts: list[dict], owner=None) -
 
         if dispositivo:
             anterior_ultima_vez = dispositivo.ultima_vez
-            dispositivo.ultima_vez = ahora
+            dispositivo.ultima_vez = ultima
 
             if owner and not dispositivo.owner_id:
                 dispositivo.owner = owner
@@ -95,7 +101,7 @@ def persist_scan_results(analisis: AnalisisRed, hosts: list[dict], owner=None) -
                 dispositivo.ip = ip
 
             dispositivo.estado = "activo"
-            dispositivo.ultima_vez = ahora
+            dispositivo.ultima_vez = ultima
 
             dispositivo.save()
         else:
@@ -108,8 +114,8 @@ def persist_scan_results(analisis: AnalisisRed, hosts: list[dict], owner=None) -
                 mac_aleatoria=mac_random,
                 es_temporal=mac_random,
                 vendor=vendor, 
-                primera_vez=ahora,
-                ultima_vez=ahora,
+                primera_vez=primera or ahora,
+                ultima_vez=ultima,
                 metodo_identificacion=metodo,
                 estado="activo",
                 owner=owner,

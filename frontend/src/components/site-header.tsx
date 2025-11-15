@@ -1,7 +1,8 @@
-import { useMemo } from "react"
+import { Fragment, useMemo } from "react"
 import { Link, useLocation } from "react-router-dom"
 
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 
@@ -72,28 +73,33 @@ export function SiteHeader() {
           orientation="vertical"
           className="mx-2 data-[orientation=vertical]:h-4"
         />
-        <div className="min-w-0 flex-1 overflow-hidden">
-          <Breadcrumb>
-            <BreadcrumbList className="flex-nowrap">
-              {crumbs.map((crumb, index) => {
-                const isLast = index === crumbs.length - 1
-                return (
-                  <BreadcrumbItem key={`${crumb.href ?? crumb.label}-${index}`} className="flex items-center">
-                    {isLast ? (
-                      <BreadcrumbPage className="truncate">{crumb.label}</BreadcrumbPage>
-                    ) : (
-                      <BreadcrumbLink asChild>
-                        <Link to={crumb.href ?? "#"} className="truncate">
-                          {crumb.label}
-                        </Link>
-                      </BreadcrumbLink>
-                    )}
-                    {index < crumbs.length - 1 ? <BreadcrumbSeparator /> : null}
-                  </BreadcrumbItem>
-                )
-              })}
-            </BreadcrumbList>
-          </Breadcrumb>
+        <div className="flex flex-1 items-center gap-2">
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <Breadcrumb>
+              <BreadcrumbList className="flex-wrap gap-1 md:flex-nowrap">
+                {crumbs.map((crumb, index) => {
+                  const isLast = index === crumbs.length - 1
+                  return (
+                    <Fragment key={`${crumb.href ?? crumb.label}-${index}`}>
+                      <BreadcrumbItem className="flex items-center">
+                        {isLast ? (
+                          <BreadcrumbPage className="truncate">{crumb.label}</BreadcrumbPage>
+                        ) : (
+                          <BreadcrumbLink asChild>
+                            <Link to={crumb.href ?? "#"} className="truncate">
+                              {crumb.label}
+                            </Link>
+                          </BreadcrumbLink>
+                        )}
+                      </BreadcrumbItem>
+                      {index < crumbs.length - 1 ? <BreadcrumbSeparator /> : null}
+                    </Fragment>
+                  )
+                })}
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+          <ThemeToggle />
         </div>
       </div>
     </header>

@@ -11,6 +11,8 @@ else:
     SCAPY_IMPORT_ERROR = None
 from ipaddress import IPv4Network, IPv4Address
 from detector.services.hostname import resolve_hostname
+from django.utils import timezone
+from datetime import datetime
 
 
 def es_mac_aleatoria(mac: str) -> bool:
@@ -23,10 +25,12 @@ def es_mac_aleatoria(mac: str) -> bool:
 def perform_arp_scan(
     network: IPv4Network,
     interface: str,
-    *,  
+    *,
     local_ip: IPv4Address | None = None,
-    timeout: int = 2,   #por el momento espera 2 segundos respuestas ARP
-    retry: int = 0,     #intentos
+    timeout: int = 2,
+    retry: int = 0,
+    attempts: Optional[int] = None,
+    rest: float = 0.0,
 ) -> list[dict]:
     
     if not isinstance(network,IPv4Network):
@@ -45,33 +49,44 @@ def perform_arp_scan(
     ether = Ether(dst="ff:ff:ff:ff:ff:ff") #broadcast
     packet = ether / arp   #construccion de paquetes 
 
-    try:
-        start = time.time()
-        answered, _ = srp( #(paquete_enviado, respuesta_recibida)
-            packet,
-            timeout=timeout,
-            iface = interface,
-            retry = retry,
-            verbose=False,
-        ) 
-        elapsed_ms = (time.time() - start) * 1000
-    except PermissionError as exc:
-        raise RuntimeError("Se requieren privilegios para enviar ARP") from exc
-    except OSError as exc:
-        raise RuntimeError(f"No se pudo ejecutar el barrido ARP: {exc}") from exc
-    
-    seen_ips = set()
-    if local_ip:
-        seen_ips.add(str(local_ip))
-    seen_ips.add(str(network.broadcast_address))
+    answered_total = []
+    start_global = time.time()
+    max_attempts = attempts or 1
 
-    resultados = []
+    for _ in range(max_attempts):
+        try:
+            answered, _ = srp(
+                packet,
+                timeout=timeout,
+                iface=interface,
+                retry=retry,
+                verbose=False,
+            )
+            answered_total.extend(answered)
+        except PermissionError as exc:
+            raise RuntimeError("Se requieren privilegios para enviar ARP") from exc
+        except OSError as exc:
+            raise RuntimeError(f"No se pudo ejecutar el barrido ARP: {exc}") from exc
+        if rest > 0:
+            time.sleep(rest)
+
+    elapsed_ms = (time.time() - start_global) * 1000
+    
+    skip_ips = set()
+    if local_ip:
+        skip_ips.add(str(local_ip))
+    skip_ips.add(str(network.broadcast_address))
+
+    resultados = {}
 
     if local_ip is None:
         socket.setdefaulttimeout(1)
 
-    for enviado, reply in answered: #(paquete_enviado, respuesta_recibida)
+    for enviado, reply in answered_total:
         ip_respuesta = reply.psrc
+
+        if ip_respuesta in skip_ips:
+            continue
 
         mac_respuesta = reply.hwsrc.lower()
         mac_random = es_mac_aleatoria(mac_respuesta)
@@ -84,20 +99,31 @@ def perform_arp_scan(
 
 
         hostname = resolve_hostname(ip_respuesta)
-    
-    
-        if ip_respuesta in seen_ips:
-            continue
-        seen_ips.add(ip_respuesta)
-        resultados.append(
-            {
-                "ip": ip_respuesta,
-                "mac": mac_respuesta,
-                "latencia_ms": round(latencia_individual, 2) if latencia_individual is not None else None,
-                "metodo": "arp",
-                "hostname": hostname,
-                "mac_aleatoria": mac_random,
-            }
-        )
 
-    return resultados, elapsed_ms
+        timestamp = None
+        reply_time = getattr(reply, "time", None)
+        if reply_time:
+            timestamp = timezone.make_aware(datetime.fromtimestamp(reply_time))
+        else:
+            timestamp = timezone.now()
+
+        if ip_respuesta in resultados:
+            entry = resultados[ip_respuesta]
+            if timestamp < entry["first_seen"]:
+                entry["first_seen"] = timestamp
+            if timestamp > entry["last_seen"]:
+                entry["last_seen"] = timestamp
+            continue
+
+        resultados[ip_respuesta] = {
+            "ip": ip_respuesta,
+            "mac": mac_respuesta,
+            "latencia_ms": round(latencia_individual, 2) if latencia_individual is not None else None,
+            "metodo": "arp",
+            "hostname": hostname,
+            "mac_aleatoria": mac_random,
+            "first_seen": timestamp,
+            "last_seen": timestamp,
+        }
+
+    return list(resultados.values()), elapsed_ms

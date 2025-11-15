@@ -6,15 +6,21 @@ from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 from django.utils import timezone
 
-try:
-    from scapy.layers.inet import IP, TCP, UDP
-    from scapy.layers.l2 import Ether
-    from scapy.packet import Raw
-except ImportError:  # pragma: no cover - entorno sin scapy
+import os
+
+if os.environ.get("SCAPY_SKIP_RUNTIME") == "1":
     IP = TCP = UDP = Ether = Raw = None  # type: ignore
     SCAPY_AVAILABLE = False
 else:
-    SCAPY_AVAILABLE = True
+    try:
+        from scapy.layers.inet import IP, TCP, UDP
+        from scapy.layers.l2 import Ether
+        from scapy.packet import Raw
+    except ImportError:  # pragma: no cover - entorno sin scapy
+        IP = TCP = UDP = Ether = Raw = None  # type: ignore
+        SCAPY_AVAILABLE = False
+    else:
+        SCAPY_AVAILABLE = True
 
 
 class CaptureUnavailable(RuntimeError):

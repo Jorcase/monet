@@ -42,6 +42,11 @@ def mark_session_state(
         sesion.fin = fin
     sesion.save(update_fields=["estado", "observaciones", "fin"])
 
+    if estado == "completada":
+        from analitica.services import evaluar_reglas_para_captura
+
+        evaluar_reglas_para_captura(sesion)
+
 
 def register_capture_file(
     sesion: CapturaSesion,

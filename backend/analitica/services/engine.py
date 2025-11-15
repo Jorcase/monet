@@ -151,6 +151,23 @@ def construir_eventos_cambio_puerto(
 ) -> List[HeuristicaEvento]:
     eventos = []
     for regla in reglas:
+        params = regla.parametros or {}
+        cambios = params.get("cambios")
+        if cambios:
+            pares_validos = {
+                (c[0], c[1]) for c in cambios if isinstance(c, (list, tuple)) and len(c) == 2
+            }
+            if pares_validos and (estado_anterior, estado_nuevo) not in pares_validos:
+                continue
+
+        puertos = params.get("puertos")
+        if puertos and puerto_resumen.puerto not in puertos:
+            continue
+
+        protocolos = params.get("protocolos")
+        if protocolos and puerto_resumen.protocolo not in protocolos:
+            continue
+
         eventos.append(
             HeuristicaEvento(
                 regla=regla,
@@ -181,3 +198,55 @@ def _first_owner(*owners):
         if owner:
             return owner
     return None
+
+
+def construir_eventos_estado_puerto(
+    reglas: Iterable[HeuristicaRegla],
+    puerto_resumen: PuertoResumen,
+    trabajo,
+    entrada: dict,
+    owner=None,
+):
+    eventos = []
+    for regla in reglas:
+        params = regla.parametros or {}
+        estado_objetivo = params.get("estado")
+        if estado_objetivo:
+            if isinstance(estado_objetivo, (list, tuple, set)):
+                if entrada["estado"] not in estado_objetivo:
+                    continue
+            elif entrada["estado"] != estado_objetivo:
+                continue
+
+        puertos = params.get("puertos")
+        if puertos:
+            if entrada["puerto"] not in puertos:
+                continue
+
+        protocolos = params.get("protocolos")
+        if protocolos:
+            if entrada["protocolo"] not in protocolos:
+                continue
+
+        eventos.append(
+            HeuristicaEvento(
+                regla=regla,
+                analisis=trabajo.analisis,
+                puerto_resumen=puerto_resumen,
+                dispositivo=puerto_resumen.dispositivo,
+                severidad=regla.severidad_por_defecto,
+                descripcion=f"Puerto {entrada['puerto']}/{entrada['protocolo'].upper()} {entrada['estado']} en {entrada['host']}",
+                evidencia={
+                    "host_ip": entrada["host"],
+                    "estado": entrada["estado"],
+                    "trabajo_id": trabajo.id,
+                },
+                owner=_first_owner(
+                    owner,
+                    trabajo.owner,
+                    trabajo.analisis.owner if trabajo.analisis else None,
+                    puerto_resumen.dispositivo.owner if puerto_resumen.dispositivo else None,
+                ),
+            )
+        )
+    return eventos

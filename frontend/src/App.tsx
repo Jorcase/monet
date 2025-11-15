@@ -18,6 +18,12 @@ import DevicesPage from "@/pages/detectores/DevicesPage"
 import DeviceDetailPage from "@/pages/detectores/DeviceDetailPage"
 import HostsPage from "@/pages/detectores/HostsPage"
 import HostDetailPage from "@/pages/detectores/HostDetailPage"
+import ScannerPage from "@/pages/ScannerPage"
+import AlertsPage from "@/pages/alertas/AlertsPage"
+import AlertRulesPage from "@/pages/alertas/AlertRulesPage"
+import AlertEventsPage from "@/pages/alertas/AlertEventsPage"
+import PortsPage from "@/pages/escaneos/PortsPage"
+import PortDetailPage from "@/pages/escaneos/PortDetailPage"
 import { GuestRoute, ProtectedRoute } from "@/routes/ProtectedRoute"
 
 export default function App() {
@@ -64,24 +70,9 @@ export default function App() {
                       />
                     }
                   />
-                  <Route
-                    path="/escaner"
-                    element={
-                      <PlaceholderPage
-                        title="Escáner de Puertos"
-                        description="Historial de escaneos y resultados por dispositivo."
-                      />
-                    }
-                  />
-                  <Route
-                    path="/escaner/puertos"
-                    element={
-                      <PlaceholderPage
-                        title="Puertos"
-                        description="Resumen de puertos detectados en los escaneos."
-                      />
-                    }
-                  />
+                  <Route path="/escaner" element={<ScannerPage />} />
+                  <Route path="/escaner/puertos" element={<PortsPage />} />
+                  <Route path="/escaner/puertos/:portId" element={<PortDetailPage />} />
                   <Route
                     path="/escaner/escanners"
                     element={
@@ -91,33 +82,9 @@ export default function App() {
                       />
                     }
                   />
-                  <Route
-                    path="/alertas"
-                    element={
-                      <PlaceholderPage
-                        title="Alertas"
-                        description="Listado de eventos y alertas generadas por las heurísticas."
-                      />
-                    }
-                  />
-                  <Route
-                    path="/alertas/reglas"
-                    element={
-                      <PlaceholderPage
-                        title="Reglas"
-                        description="Gestioná las reglas que disparan alertas."
-                      />
-                    }
-                  />
-                  <Route
-                    path="/alertas/eventos"
-                    element={
-                      <PlaceholderPage
-                        title="Eventos"
-                        description="Eventos generados por el motor de alertas."
-                      />
-                    }
-                  />
+                  <Route path="/alertas" element={<AlertsPage />} />
+                  <Route path="/alertas/reglas" element={<AlertRulesPage />} />
+                  <Route path="/alertas/eventos" element={<AlertEventsPage />} />
                 </Route>
               </Route>
 

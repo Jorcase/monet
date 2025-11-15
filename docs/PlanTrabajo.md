@@ -76,6 +76,13 @@ Hoja de ruta viva para coordinar las tareas inmediatas del backend y frontend. E
 - Detalle de capturas activas:
   - Separar vistas y métricas específicas para sesiones activas (acciones, latencias, objetivos) y definir qué estadísticas adicionales tienen sentido.
   - Evaluar integración con módulo de Escáner para evitar duplicación de funcionalidad.
+- Captura pasiva – mayor riqueza de datos:
+  - Extender el sniffer para extraer metadata de capa 7 (SNI/Host de TLS/HTTP, nombres de servicio conocidos) y guardarla junto al flujo.
+  - Construir reglas heurísticas basadas en esa metadata (dominios permitidos, detección de protocolos inusuales) y mostrarlas en el panel de alertas.
+  - Agregar visualizaciones en la UI de capturas: “Top dominios”, “Top pares IP:puerto”, raspado de protocolos y posibles firmas de aplicaciones.
+- Fingerprints activos/pasivos:
+  - Reemplazar el `subprocess` de Nmap por la librería `python-nmap` para obtener parsing estructurado y métricas más ricas.
+  - Agregar un modo ARP “completo” (enviar múltiples solicitudes con reintentos/intervalos configurables) para mejorar la detección de hosts intermitentes.
 
 ### Notas para despliegue nube (referencia futura)
 - Backend/API:

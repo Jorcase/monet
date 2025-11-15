@@ -26,7 +26,6 @@ export interface CaptureSession {
   observaciones: string
   archivos_count: number
   flujos_count: number
-  acciones_count: number
   tiene_estadistica: boolean
   estadistica_resumen: CaptureStatistics | null
 }
@@ -84,18 +83,6 @@ export interface DetectorDevice {
   fuente_fingerprint: string | null
   ultima_fingerprint: string | null
   ultima_vez: string | null
-}
-
-export interface CaptureAction {
-  id: number
-  tipo: string
-  objetivo: string
-  puerto: number | null
-  payload: string
-  resultado: Record<string, unknown>
-  exitoso: boolean
-  observaciones: string
-  ejecutada_en: string
 }
 
 export interface CaptureFingerprint {

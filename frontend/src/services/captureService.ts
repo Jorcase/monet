@@ -1,17 +1,11 @@
 import { apiClient } from "@/services/apiClient"
-import type { PaginatedResponse, CaptureSession, CaptureFile, CaptureFlow, CaptureStatistics, CaptureAction, CaptureFingerprint } from "@/types/capture"
+import type { PaginatedResponse, CaptureSession, CaptureFile, CaptureFlow, CaptureStatistics, CaptureFingerprint } from "@/types/capture"
 
 export interface CaptureRunPayload {
   interfaz?: string
-  modo?: string
   origen?: string
   filtro_bpf?: string
   duracion_objetivo?: number
-  objetivo?: string
-  puertos?: string
-  tipo_accion?: string
-  payload?: string
-  timeout?: number
 }
 
 export interface CaptureFinalizePayload {
@@ -50,10 +44,6 @@ export async function fetchCaptureStats(sesionId: number) {
   return apiClient.get<CaptureStatistics>(`/capturas/${sesionId}/estadistica/`)
 }
 
-export async function fetchCaptureActions(sesionId: number, params?: { limit?: number }) {
-  return apiClient.get<CaptureAction[]>(`/capturas/${sesionId}/acciones/`, { query: params })
-}
-
 export async function fetchCaptureFingerprints(
   sesionId: number,
   params?: { limit?: number }
@@ -77,7 +67,6 @@ export const captureService = {
   fetchCaptureFiles,
   fetchCaptureFlows,
   fetchCaptureStats,
-  fetchCaptureActions,
   fetchCaptureFingerprints,
   runCaptureSession,
   finalizeCaptureSession,

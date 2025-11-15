@@ -4,7 +4,7 @@ import { detectorService } from "@/services/detectorService"
 import type { DetectorHost } from "@/types/detector"
 import { parseApiError } from "@/lib/api-error"
 
-export function useHostsInventory(limit = 200) {
+export function useHostsInventory() {
   const [hosts, setHosts] = useState<DetectorHost[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -13,7 +13,7 @@ export function useHostsInventory(limit = 200) {
     setLoading(true)
     setError(null)
     try {
-      const data = await detectorService.fetchHosts({ limit })
+      const data = await detectorService.fetchHosts()
       setHosts(data)
     } catch (err) {
       setHosts([])
@@ -21,7 +21,7 @@ export function useHostsInventory(limit = 200) {
     } finally {
       setLoading(false)
     }
-  }, [limit])
+  }, [])
 
   useEffect(() => {
     load()

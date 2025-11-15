@@ -15,6 +15,7 @@ from api.views import (
     PuertoEncontradoViewSet,
     PuertoResumenViewSet,
     HeuristicaEventoViewSet,
+    HeuristicaReglaViewSet,
     AgenteStatusView,
     AgenteRefreshView,
     AgenteHistoryView,
@@ -22,8 +23,10 @@ from api.views import (
     HostDetectadoListView,
     DispositivoHistorialView,
     DetectorScanView,
+    ScannerRunView,
     CapturaRunView,
     CapturaFinalizarView,
+    HeuristicaEventoNotificadoView,
 )
 
 router = DefaultRouter()
@@ -33,6 +36,7 @@ router.register(r"trabajos", TrabajoScannerViewSet, basename="trabajo")
 router.register(r"puertos", PuertoEncontradoViewSet, basename="puerto")
 router.register(r"puertos-resumen", PuertoResumenViewSet, basename="puerto-resumen")
 router.register(r"alertas", HeuristicaEventoViewSet, basename="alerta")
+router.register(r"reglas", HeuristicaReglaViewSet, basename="regla")
 
 urlpatterns = [
     path("auth/csrf/", CsrfTokenView.as_view(), name="auth-csrf"),
@@ -51,10 +55,16 @@ urlpatterns = [
         name="detector-dispositivo-historial",
     ),
     path("detector/ejecutar/", DetectorScanView.as_view(), name="detector-ejecutar"),
+    path("escaner/ejecutar/", ScannerRunView.as_view(), name="escaner-ejecutar"),
     path("capturas/ejecutar/", CapturaRunView.as_view(), name="capturas-ejecutar"),
     path(
         "capturas/<int:pk>/finalizar/",
         CapturaFinalizarView.as_view(),
         name="capturas-finalizar",
+    ),
+    path(
+        "alertas/<int:pk>/notificado/",
+        HeuristicaEventoNotificadoView.as_view(),
+        name="alerta-notificado",
     ),
 ] + router.urls

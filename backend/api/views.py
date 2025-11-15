@@ -1,5 +1,6 @@
 from django.db.models import Q, Count
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from datetime import timedelta
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -19,32 +20,31 @@ from captura.models import (
     CapturaArchivo,
     CapturaFlujo,
     CapturaEstadistica,
-    CapturaAccionActiva,
     FingerprintObservacion,
 )
 from captura.services.session import (
     create_capture_session,
     mark_session_state,
     recompute_statistics,
-    increment_session_counters,
 )
 from captura.services.sniffer import run_passive_capture, CaptureUnavailable
-from captura.services.active import run_active_probe
 from django.db import close_old_connections
 from escaner.models import TrabajoScanner, PuertoEncontrado, PuertoResumen
-from analitica.models import HeuristicaEvento
+from escaner.services.scanner import ejecutar_trabajo
+from escaner.services.port_scan import normalize_port_list
+from analitica.models import HeuristicaEvento, HeuristicaRegla
 from api.serializers import (
     DispositivoSerializer,
     CapturaSesionSerializer,
     CapturaArchivoSerializer,
     CapturaFlujoSerializer,
     CapturaEstadisticaSerializer,
-    CapturaAccionActivaSerializer,
     FingerprintObservacionSerializer,
     TrabajoScannerSerializer,
     PuertoEncontradoSerializer,
     PuertoResumenSerializer,
     HeuristicaEventoSerializer,
+    HeuristicaReglaSerializer,
     AgenteLocalSerializer,
     AnalisisRedSerializer,
     HostDetectadoSerializer,
@@ -80,7 +80,6 @@ class CapturaSesionViewSet(viewsets.ReadOnlyModelViewSet):
             .annotate(
                 archivos_count=Count("archivos", distinct=True),
                 flujos_count=Count("flujos", distinct=True),
-                acciones_count=Count("acciones_activas", distinct=True),
             )
             .select_related("estadistica")
             .order_by("-inicio")
@@ -148,14 +147,6 @@ class CapturaSesionViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = CapturaEstadisticaSerializer(estadistica)
         return Response(serializer.data)
 
-    @action(detail=True, methods=["get"], url_path="acciones")
-    def acciones(self, request, pk=None):
-        sesion = self.get_object()
-        acciones = sesion.acciones_activas.order_by("-ejecutada_en")
-        acciones = self._limit_queryset(acciones, request, default=20, max_items=100)
-        serializer = CapturaAccionActivaSerializer(acciones, many=True)
-        return Response(serializer.data)
-
     @action(detail=True, methods=["get"], url_path="fingerprints")
     def fingerprints(self, request, pk=None):
         sesion = self.get_object()
@@ -206,39 +197,6 @@ class CapturaRunView(APIView):
             ventana_segundos = 10
         ventana_segundos = max(1, ventana_segundos)
 
-        active_params = None
-        if modo in {"activa", "mixta"}:
-            objetivo = (request.data.get("objetivo") or "").strip()
-            if not objetivo:
-                return Response(
-                    {"detail": "Debés indicar un objetivo para la captura activa."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            puertos_raw = request.data.get("puertos") or request.data.get("puerto") or "80"
-            try:
-                puertos = self._parse_ports(puertos_raw)
-            except ValueError as exc:
-                return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
-
-            tipo_accion = request.data.get("tipo_accion") or "tcp_syn"
-            if tipo_accion not in dict(CapturaAccionActiva.TIPO_CHOICES):
-                return Response({"detail": "Tipo de acción activa inválido."}, status=status.HTTP_400_BAD_REQUEST)
-
-            payload = request.data.get("payload") or ""
-            try:
-                timeout_value = request.data.get("timeout")
-                timeout = float(timeout_value) if timeout_value else 3.0
-            except (ValueError, TypeError):
-                return Response({"detail": "El timeout debe ser un número válido."}, status=status.HTTP_400_BAD_REQUEST)
-
-            active_params = {
-                "objetivo": objetivo,
-                "puertos": puertos,
-                "tipo": tipo_accion,
-                "payload": payload,
-                "timeout": max(timeout, 0.5),
-            }
-
         sesion = create_capture_session(
             interfaz=interfaz,
             modo=modo,
@@ -248,20 +206,13 @@ class CapturaRunView(APIView):
             owner=request.user,
         )
 
-        if modo in {"pasiva", "mixta"}:
-            self._launch_passive_capture(
-                sesion,
-                ventana_segundos=ventana_segundos,
-                duracion=duracion_value,
-                filtro=filtro_bpf,
-                interfaz=interfaz,
-            )
-        if modo in {"activa", "mixta"} and active_params:
-            self._launch_active_capture(
-                sesion,
-                finalize=modo != "mixta",
-                **active_params,
-            )
+        self._launch_passive_capture(
+            sesion,
+            ventana_segundos=ventana_segundos,
+            duracion=duracion_value,
+            filtro=filtro_bpf,
+            interfaz=interfaz,
+        )
 
         sesion.refresh_from_db()
         serializer = CapturaSesionSerializer(sesion)
@@ -301,70 +252,6 @@ class CapturaRunView(APIView):
         thread = threading.Thread(target=_run, daemon=True)
         thread.start()
 
-    def _launch_active_capture(
-        self,
-        sesion: CapturaSesion,
-        *,
-        objetivo: str,
-        puertos: list[int],
-        tipo: str,
-        payload: str,
-        timeout: float,
-        finalize: bool = True,
-    ) -> None:
-        def _run():
-            close_old_connections()
-            try:
-                if sesion.estado == "pendiente":
-                    sesion.estado = "capturando"
-                    sesion.inicio = timezone.now()
-                    sesion.save(update_fields=["estado", "inicio"])
-                for puerto in puertos:
-                    run_active_probe(
-                        sesion,
-                        tipo=tipo,
-                        objetivo=objetivo,
-                        puerto=puerto,
-                        payload=payload,
-                        timeout=timeout,
-                    )
-                increment_session_counters(sesion, paquetes=len(puertos), bytes_totales=0)
-                if finalize:
-                    mark_session_state(sesion, estado="completada", fin=timezone.now())
-            except Exception as exc:
-                mark_session_state(
-                    sesion,
-                    estado="error",
-                    observaciones=f"Error en captura activa: {exc}",
-                    fin=timezone.now(),
-                )
-            finally:
-                close_old_connections()
-
-        thread = threading.Thread(target=_run, daemon=True)
-        thread.start()
-
-    def _parse_ports(self, value) -> list[int]:
-        if value is None:
-            return [80]
-        if isinstance(value, (list, tuple)):
-            source = value
-        else:
-            source = str(value).split(",")
-        ports: list[int] = []
-        for item in source:
-            chunk = str(item).strip()
-            if not chunk:
-                continue
-            try:
-                port = int(chunk)
-            except ValueError:
-                raise ValueError("Los puertos deben ser números enteros separados por coma.")
-            if not (0 < port <= 65535):
-                raise ValueError("Los puertos deben estar entre 1 y 65535.")
-            ports.append(port)
-        return ports or [80]
-
 
 class CapturaFinalizarView(APIView):
     permission_classes = [IsAuthenticated]
@@ -392,9 +279,19 @@ class TrabajoScannerViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return TrabajoScanner.objects.filter(
+        queryset = TrabajoScanner.objects.filter(
             Q(owner=user) | Q(owner__isnull=True)
-        ).order_by('-inicio')[:50]
+        ).order_by('-inicio')
+        estado = self.request.query_params.get("estado")
+        if estado in dict(TrabajoScanner.ESTADO_CHOICES):
+            queryset = queryset.filter(estado=estado)
+        tipo = self.request.query_params.get("tipo")
+        if tipo in dict(TrabajoScanner.TIPO_CHOICES):
+            queryset = queryset.filter(tipo_scan=tipo)
+        objetivo = self.request.query_params.get("objetivo")
+        if objetivo:
+            queryset = queryset.filter(objetivo__icontains=objetivo)
+        return queryset[:50]
 
 
 class PuertoEncontradoViewSet(viewsets.ReadOnlyModelViewSet):
@@ -403,15 +300,35 @@ class PuertoEncontradoViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return (
+        queryset = (
             PuertoEncontrado.objects.select_related('trabajo')
             .filter(
                 Q(trabajo__owner=user)
                 | Q(trabajo__owner__isnull=True)
                 | Q(dispositivo__owner=user)
             )
-            .order_by('-detected_at')[:200]
+            .order_by('-detected_at')
         )
+        trabajo_id = self.request.query_params.get("trabajo_id")
+        if trabajo_id:
+            queryset = queryset.filter(trabajo_id=trabajo_id)
+        host_ip = self.request.query_params.get("host_ip")
+        if host_ip:
+            queryset = queryset.filter(host_ip=host_ip)
+        protocolo = self.request.query_params.get("protocolo")
+        if protocolo in dict(PuertoEncontrado.PROTO_CHOICES):
+            queryset = queryset.filter(protocolo=protocolo)
+        estado = self.request.query_params.get("estado")
+        if estado in dict(PuertoEncontrado.ESTADO_CHOICES):
+            queryset = queryset.filter(estado=estado)
+        try:
+            limit = int(self.request.query_params.get("limit", 200))
+        except ValueError:
+            limit = 200
+        limit = max(1, min(limit, 1000))
+        if getattr(self, "action", None) == "list":
+            return queryset[:limit]
+        return queryset
 
 
 class PuertoResumenViewSet(viewsets.ReadOnlyModelViewSet):
@@ -420,9 +337,49 @@ class PuertoResumenViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return PuertoResumen.objects.select_related('dispositivo').filter(
-            Q(dispositivo__owner=user)
+        queryset = PuertoResumen.objects.select_related('dispositivo').filter(
+            Q(dispositivo__owner=user) | Q(dispositivo__isnull=True)
         )
+        host_ip = self.request.query_params.get("host_ip")
+        if host_ip:
+            queryset = queryset.filter(host_ip=host_ip)
+        dispositivo_id = self.request.query_params.get("dispositivo_id")
+        if dispositivo_id:
+            queryset = queryset.filter(dispositivo_id=dispositivo_id)
+        protocolo = self.request.query_params.get("protocolo")
+        if protocolo in dict(PuertoEncontrado.PROTO_CHOICES):
+            queryset = queryset.filter(protocolo=protocolo)
+        puerto = self.request.query_params.get("puerto")
+        if puerto and puerto.isdigit():
+            queryset = queryset.filter(puerto=int(puerto))
+        estado = self.request.query_params.get("estado")
+        if estado in dict(PuertoEncontrado.ESTADO_CHOICES):
+            queryset = queryset.filter(estado=estado)
+        queryset = queryset.order_by("-ultima_detectado")
+        try:
+            limit = int(self.request.query_params.get("limit", 200))
+        except ValueError:
+            limit = 200
+        limit = max(1, min(limit, 1000))
+        if getattr(self, "action", None) == "list":
+            return queryset[:limit]
+        return queryset
+
+
+def _eventos_queryset_base(user):
+    return HeuristicaEvento.objects.select_related(
+        "dispositivo",
+        "regla",
+        "captura_sesion",
+        "analisis",
+        "puerto_resumen",
+        "captura_flujo",
+    ).filter(
+        Q(owner=user)
+        | Q(dispositivo__owner=user)
+        | Q(analisis__owner=user)
+        | Q(captura_sesion__owner=user)
+    )
 
 
 class HeuristicaEventoViewSet(viewsets.ReadOnlyModelViewSet):
@@ -431,16 +388,106 @@ class HeuristicaEventoViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return (
-            HeuristicaEvento.objects.select_related('dispositivo', 'regla')
-            .filter(
-                Q(owner=user)
-                | Q(dispositivo__owner=user)
-                | Q(analisis__owner=user)
-                | Q(captura_sesion__owner=user)
-            )
-            .order_by('-ts')[:200]
+        queryset = _eventos_queryset_base(user)
+
+        severidad = self.request.query_params.get("severidad")
+        if severidad in dict(HeuristicaRegla.SEVERIDAD_CHOICES):
+            queryset = queryset.filter(severidad=severidad)
+
+        modulo = self.request.query_params.get("modulo")
+        if modulo in dict(HeuristicaRegla.MODULO_CHOICES):
+            queryset = queryset.filter(regla__modulo_objetivo=modulo)
+
+        regla_id = self.request.query_params.get("regla_id")
+        if regla_id:
+            queryset = queryset.filter(regla_id=regla_id)
+
+        dispositivo_id = self.request.query_params.get("dispositivo_id")
+        if dispositivo_id:
+            queryset = queryset.filter(dispositivo_id=dispositivo_id)
+
+        notificado = self.request.query_params.get("notificado")
+        if notificado in {"true", "false"}:
+            queryset = queryset.filter(notificado=notificado == "true")
+
+        desde = self.request.query_params.get("desde")
+        if desde:
+            parsed = parse_datetime(desde)
+            if parsed:
+                queryset = queryset.filter(ts__gte=parsed)
+        hasta = self.request.query_params.get("hasta")
+        if hasta:
+            parsed = parse_datetime(hasta)
+            if parsed:
+                queryset = queryset.filter(ts__lte=parsed)
+
+        try:
+            limit = int(self.request.query_params.get("limit", 200))
+        except ValueError:
+            limit = 200
+        limit = max(1, min(limit, 500))
+
+        return queryset.order_by('-ts')[:limit]
+
+    @action(detail=True, methods=["post"], url_path="notificado")
+    def marcar_notificado(self, request, pk=None):
+        evento = self.get_object()
+        notificado_flag = request.data.get("notificado", True)
+        notificado = (
+            notificado_flag
+            if isinstance(notificado_flag, bool)
+            else str(notificado_flag).strip().lower() not in {"false", "0", "", "no"}
         )
+        evento.notificado = notificado
+        evento.save(update_fields=["notificado"])
+        serializer = self.get_serializer(evento)
+        return Response(serializer.data)
+
+
+class HeuristicaEventoNotificadoView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        queryset = _eventos_queryset_base(request.user)
+        evento = get_object_or_404(queryset, pk=pk)
+        notificado_flag = request.data.get("notificado", True)
+        notificado = (
+            notificado_flag
+            if isinstance(notificado_flag, bool)
+            else str(notificado_flag).strip().lower() not in {"false", "0", "", "no"}
+        )
+        evento.notificado = notificado
+        evento.save(update_fields=["notificado"])
+        serializer = HeuristicaEventoSerializer(evento)
+        return Response(serializer.data)
+
+
+class HeuristicaReglaViewSet(viewsets.ModelViewSet):
+    serializer_class = HeuristicaReglaSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = HeuristicaRegla.objects.all().order_by('nombre')
+        modulo = self.request.query_params.get("modulo")
+        if modulo in dict(HeuristicaRegla.MODULO_CHOICES):
+            queryset = queryset.filter(modulo_objetivo=modulo)
+        tipo = self.request.query_params.get("tipo")
+        if tipo in dict(HeuristicaRegla.TIPO_CHOICES):
+            queryset = queryset.filter(tipo=tipo)
+        activa = self.request.query_params.get("activa")
+        if activa in {"true", "false"}:
+            queryset = queryset.filter(activa=activa == "true")
+        search = self.request.query_params.get("search")
+        if search:
+            queryset = queryset.filter(nombre__icontains=search)
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+    def perform_update(self, serializer):
+        serializer.save()
+
 
 
 class AgenteStatusView(APIView):
@@ -570,6 +617,12 @@ class DetectorScanView(APIView):
     def post(self, request):
         interfaz = request.data.get("interfaz")
         tipo = request.data.get("tipo")
+        fingerprint_os = bool(request.data.get("fingerprint_os"))
+        arp_mode = (request.data.get("arp_mode") or "rapido").lower()
+        if arp_mode not in {"rapido", "completo"}:
+            return Response({"detail": "Modo ARP inválido."}, status=status.HTTP_400_BAD_REQUEST)
+        attempts = 3 if arp_mode == "completo" else 1
+        rest = 0.5 if arp_mode == "completo" else 0.0
 
         if tipo and tipo not in dict(AnalisisRed.TIPO_CHOICES):
             return Response(
@@ -582,9 +635,137 @@ class DetectorScanView(APIView):
                 interface=interfaz,
                 owner_username=request.user.username,
                 scan_type=tipo,
+                fingerprint_os=fingerprint_os,
+                arp_attempts=attempts,
+                arp_rest=rest,
             )
         except DetectorRunError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = AnalisisRedSerializer(analisis)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ScannerRunView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        include_local = bool(request.data.get("include_local"))
+        include_active = bool(request.data.get("include_active_devices"))
+        manual_targets = request.data.get("targets") or []
+        analisis_ids = request.data.get("analisis_ids") or []
+        if isinstance(manual_targets, str):
+            manual_targets = [manual_targets]
+        if isinstance(analisis_ids, str):
+            analisis_ids = [analisis_ids]
+
+        targets = self._build_targets(
+            include_local=include_local,
+            manual_targets=manual_targets,
+            include_active=include_active,
+            analisis_ids=analisis_ids,
+            user=user,
+        )
+        if not targets:
+            return Response(
+                {"detail": "Debés indicar al menos un objetivo para escanear."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        tipo = request.data.get("tipo", "rapido")
+        valid_types = dict(TrabajoScanner.TIPO_CHOICES)
+        if tipo not in valid_types:
+            return Response({"detail": "Tipo de escaneo inválido."}, status=status.HTTP_400_BAD_REQUEST)
+
+        puertos = None
+        if tipo == "personalizado":
+            puertos_raw = (request.data.get("puertos") or "").strip()
+            if not puertos_raw:
+                return Response(
+                    {"detail": "Debés indicar los puertos a escanear cuando el tipo es personalizado."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                puertos = normalize_port_list(puertos_raw)
+            except ValueError as exc:
+                return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        analisis_obj = None
+        analisis_id = request.data.get("analisis_id")
+        if analisis_id:
+            analisis_obj = get_object_or_404(
+                AnalisisRed.objects.filter(Q(owner=user) | Q(owner__isnull=True)),
+                pk=analisis_id,
+            )
+
+        trabajo = TrabajoScanner.objects.create(
+            analisis=analisis_obj,
+            objetivo=", ".join(targets),
+            tipo_scan=tipo,
+            estado="pendiente",
+            owner=user,
+        )
+        if puertos:
+            trabajo.notas = f"Puertos personalizados: {puertos}"
+            trabajo.save(update_fields=["notas"])
+
+        self._launch_scan(trabajo, targets, tipo, puertos)
+        serializer = TrabajoScannerSerializer(trabajo)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def _build_targets(self, *, include_local: bool, manual_targets, include_active: bool, analisis_ids, user):
+        targets: list[str] = []
+        if include_local:
+            targets.append("127.0.0.1")
+
+        if manual_targets:
+            if isinstance(manual_targets, str):
+                manual_targets = manual_targets.split(",")
+            for entry in manual_targets:
+                if entry:
+                    targets.append(entry.strip())
+
+        if include_active:
+            activos = (
+                Dispositivo.objects.filter(
+                    Q(owner=user) | Q(owner__isnull=True),
+                    estado="activo",
+                )
+                .exclude(ip="")
+                .values_list("ip", flat=True)
+            )
+            targets.extend(list(activos))
+
+        if analisis_ids:
+            try:
+                ids = [int(pk) for pk in analisis_ids]
+            except (TypeError, ValueError):
+                ids = []
+            if ids:
+                hosts = (
+                    HostDetectado.objects.filter(analisis_id__in=ids)
+                    .filter(Q(analisis__owner=user) | Q(analisis__owner__isnull=True))
+                    .values_list("ip", flat=True)
+                )
+                targets.extend(list(hosts))
+
+        cleaned: list[str] = []
+        seen = set()
+        for ip in targets:
+            ip = (ip or "").strip()
+            if not ip or ip in seen:
+                continue
+            seen.add(ip)
+            cleaned.append(ip)
+        return cleaned
+
+    def _launch_scan(self, trabajo, targets, tipo, puertos):
+        def _run():
+            close_old_connections()
+            try:
+                ejecutar_trabajo(trabajo, targets, tipo_scan=tipo, puertos=puertos)
+            finally:
+                close_old_connections()
+
+        threading.Thread(target=_run, daemon=True).start()

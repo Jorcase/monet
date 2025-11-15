@@ -1,7 +1,6 @@
 import type { Column, ColumnDef } from "@tanstack/react-table"
 import { ArrowUpDown, MoreHorizontal } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import type { DetectorHost } from "@/types/detector"
 
@@ -9,19 +8,11 @@ export type HostTableMeta = {
   onView?: (host: DetectorHost) => void
 }
 
-const METHOD_LABELS: Record<string, string> = {
-  arp: "ARP",
-  ping: "Ping",
-  nmap: "Nmap",
-  passive: "Pasivo",
-  otro: "Otro",
-}
-
 export const hostColumns: ColumnDef<DetectorHost, unknown>[] = [
   {
     id: "search",
     accessorFn: (row) =>
-      [row.hostname, row.ip, row.mac, row.metodo_deteccion, row.notas]
+      [`${row.analisis_id}`, row.hostname, row.ip, row.mac, row.metodo_deteccion, row.notas]
         .filter(Boolean)
         .join(" ")
         .toLowerCase(),
@@ -32,6 +23,16 @@ export const hostColumns: ColumnDef<DetectorHost, unknown>[] = [
       const content = (row.getValue<string>(columnId) || "").toLowerCase()
       return content.includes(String(value).toLowerCase())
     },
+  },
+  {
+    accessorKey: "analisis_id",
+    header: ({ column }) => <SortableHeader column={column} label="# Análisis" />,
+    cell: ({ row }) => `#${row.original.analisis_id}`,
+    filterFn: (row, columnId, value) => {
+      if (!value) return true
+      return String(row.getValue(columnId)) === String(value).trim()
+    },
+    enableHiding: false,
   },
   {
     accessorKey: "hostname",
@@ -48,25 +49,9 @@ export const hostColumns: ColumnDef<DetectorHost, unknown>[] = [
     cell: ({ row }) => (row.original.mac ? <span className="font-mono text-xs">{row.original.mac}</span> : "—"),
   },
   {
-    accessorKey: "metodo_deteccion",
-    header: ({ column }) => <SortableHeader column={column} label="Método" />,
-    cell: ({ row }) => (
-      <Badge variant="outline">{METHOD_LABELS[row.original.metodo_deteccion] ?? row.original.metodo_deteccion}</Badge>
-    ),
-    filterFn: (row, columnId, value) => {
-      if (!value || value === "todos") return true
-      return row.getValue(columnId) === value
-    },
-  },
-  {
     accessorKey: "latencia_ms",
     header: ({ column }) => <SortableHeader column={column} label="Latencia" />,
     cell: ({ row }) => (row.original.latencia_ms != null ? `${row.original.latencia_ms} ms` : "N/A"),
-  },
-  {
-    accessorKey: "primera_vista",
-    header: ({ column }) => <SortableHeader column={column} label="Primera vez" />,
-    cell: ({ row }) => formatDate(row.original.primera_vista),
   },
   {
     accessorKey: "ultima_vista",

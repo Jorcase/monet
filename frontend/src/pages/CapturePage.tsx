@@ -1,6 +1,6 @@
 import { type FormEvent, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
-import { Loader2, Play, Zap } from "lucide-react"
+import { Loader2, Play } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,12 +10,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Pagination } from "@/components/ui/pagination"
-import { Badge } from "@/components/ui/badge"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { useCaptureSessions } from "@/hooks/useCaptureSessions"
 import { useRunCapture } from "@/hooks/useRunCapture"
 import { useFinalizeCapture } from "@/hooks/useFinalizeCapture"
 import { useCaptureStats } from "@/hooks/useCaptureStats"
-import { useCaptureActions } from "@/hooks/useCaptureActions"
 import type { CaptureSession } from "@/types/capture"
 import { cn } from "@/lib/utils"
 
@@ -25,16 +31,10 @@ const ORIGINS = [
   { value: "api", label: "Remota" },
 ]
 
-const ACTIVE_TYPES = [
-  { value: "tcp_syn", label: "Sonda TCP SYN" },
-  { value: "udp_probe", label: "Sonda UDP" },
-]
-
 export default function CapturePage() {
   const { sessions, loading, error, reload } = useCaptureSessions(20)
   const [selectedId, setSelectedId] = useState<number | undefined>()
   const [pendingPassiveId, setPendingPassiveId] = useState<number | null>(null)
-  const [pendingActiveId, setPendingActiveId] = useState<number | null>(null)
   const activeSession = useMemo(() => {
     return sessions.find((s) => s.id === selectedId) ?? sessions[0]
   }, [sessions, selectedId])
@@ -44,19 +44,11 @@ export default function CapturePage() {
     reload: reloadStats,
   } = useCaptureStats(activeSession?.id)
   const { run, loading: runningPassive, error: passiveError } = useRunCapture()
-  const { run: runActive, loading: runningActive, error: activeError } = useRunCapture()
   const { finalize, loading: finalizing } = useFinalizeCapture()
 
   const [passiveForm, setPassiveForm] = useState({ interfaz: "", duracion: "60", filtro: "", origen: "manual" })
   const [advancedFilter, setAdvancedFilter] = useState(false)
   const [passiveBuilder, setPassiveBuilder] = useState({ protocolo: "any", host: "", puerto: "" })
-  const [activeForm, setActiveForm] = useState({
-    interfaz: "",
-    objetivo: "",
-    puertos: "80",
-    tipo: "tcp_syn",
-    timeout: "3",
-  })
   const [page, setPage] = useState(1)
   const pageSize = 7
 
@@ -74,48 +66,38 @@ export default function CapturePage() {
   }, [sessions.length, page, pageSize])
 
   useEffect(() => {
-    const handleCompletion = (
-      sessionId: number | null,
-      setPending: (value: number | null) => void,
-      tipo: "pasiva" | "activa"
-    ) => {
-      if (!sessionId) return
-      const target = sessions.find((session) => session.id === sessionId)
-      if (!target) return
-      if (["pendiente", "capturando"].includes(target.estado)) {
-        return
-      }
-      setPending(null)
-      const estado = target.estado.toLowerCase()
-      if (estado === "completada") {
-        toast.success(`Captura ${sessionId} finalizada`, {
-          description: `La sesión ${tipo} ya está disponible.`,
-        })
-      } else if (estado === "abortada") {
-        toast.info(`Captura ${sessionId} abortada`)
-      } else if (estado === "error") {
-        toast.error(`Captura ${sessionId} falló`, {
-          description: target.observaciones || "Revisá los logs para más detalle.",
-        })
-      }
-      if (target.id === activeSession?.id) {
-        reloadStats()
-      }
+    if (!pendingPassiveId) return
+    const target = sessions.find((session) => session.id === pendingPassiveId)
+    if (!target || ["pendiente", "capturando"].includes(target.estado)) {
+      return
     }
-
-    handleCompletion(pendingPassiveId, setPendingPassiveId, "pasiva")
-    handleCompletion(pendingActiveId, setPendingActiveId, "activa")
-  }, [sessions, pendingPassiveId, pendingActiveId, activeSession?.id, reloadStats])
+    setPendingPassiveId(null)
+    const estado = target.estado.toLowerCase()
+    if (estado === "completada") {
+      toast.success(`Captura ${pendingPassiveId} finalizada`, {
+        description: "La sesión ya está disponible.",
+      })
+    } else if (estado === "abortada") {
+      toast.info(`Captura ${pendingPassiveId} abortada`)
+    } else if (estado === "error") {
+      toast.error(`Captura ${pendingPassiveId} falló`, {
+        description: target.observaciones || "Revisá los logs para más detalle.",
+      })
+    }
+    if (target.id === activeSession?.id) {
+      reloadStats()
+    }
+  }, [sessions, pendingPassiveId, activeSession?.id, reloadStats])
 
   useEffect(() => {
-    if (!pendingPassiveId && !pendingActiveId) {
+    if (!pendingPassiveId) {
       return
     }
     const interval = setInterval(() => {
       reload()
     }, 4000)
     return () => clearInterval(interval)
-  }, [pendingPassiveId, pendingActiveId, reload])
+  }, [pendingPassiveId, reload])
 
   const passiveFilterPreview = useMemo(() => {
     return passiveForm.filtro.trim() || buildPassiveFilter(passiveBuilder)
@@ -136,7 +118,6 @@ export default function CapturePage() {
     const finalFilter = manualFilter || computedFilter || ""
     const result = await run({
       ...(interfaz ? { interfaz } : {}),
-      modo: "pasiva",
       origen: passiveForm.origen,
       filtro_bpf: finalFilter,
       duracion_objetivo: duracion,
@@ -149,34 +130,6 @@ export default function CapturePage() {
       await reload()
       setSelectedId(result.id)
       setPendingPassiveId(result.id)
-    }
-  }
-
-  const handleActiveSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const interfaz = activeForm.interfaz.trim()
-    const objetivo = activeForm.objetivo.trim()
-    if (!objetivo) {
-      toast.error("Indicá el host o IP objetivo para la captura activa.")
-      return
-    }
-    const timeout = Number(activeForm.timeout) || 3
-    const result = await runActive({
-      ...(interfaz ? { interfaz } : {}),
-      modo: "activa",
-      origen: "manual",
-      objetivo,
-      puertos: activeForm.puertos || "80",
-      tipo_accion: activeForm.tipo,
-      timeout,
-    })
-    if (result) {
-      toast.warning(`Captura activa ${result.id} en ejecución`, {
-        description: "Se actualizará automáticamente al finalizar.",
-      })
-      await reload()
-      setSelectedId(result.id)
-      setPendingActiveId(result.id)
     }
   }
 
@@ -196,11 +149,11 @@ export default function CapturePage() {
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Captura de tráfico</h1>
         <p className="text-sm text-muted-foreground">
-          Ejecutá capturas pasivas o activas y consultá el historial de sesiones.
+          Ejecutá capturas pasivas y consultá el historial de sesiones.
         </p>
       </header>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -339,101 +292,6 @@ export default function CapturePage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Zap className="h-4 w-4" /> Captura activa
-            </CardTitle>
-            <CardDescription>Generá tráfico controlado para detectar respuestas específicas.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form className="space-y-4" onSubmit={handleActiveSubmit}>
-             
-              <div className="space-y-2">
-                <Label>Tipo de sonda</Label>
-                <Select value={activeForm.tipo} onValueChange={(value) => setActiveForm((prev) => ({ ...prev, tipo: value }))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ACTIVE_TYPES.map((item) => (
-                      <SelectItem key={item.value} value={item.value}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">Se ejecuta una sonda por puerto y finaliza al recibir respuesta.</p>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="active-objetivo">Objetivo (IP/host)</Label>
-                  <Input
-                    id="active-objetivo"
-                    value={activeForm.objetivo}
-                    onChange={(event) => setActiveForm((prev) => ({ ...prev, objetivo: event.target.value }))}
-                    placeholder="192.168.0.10"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="active-puertos">Puertos</Label>
-                  <Input
-                    id="active-puertos"
-                    value={activeForm.puertos}
-                    onChange={(event) => setActiveForm((prev) => ({ ...prev, puertos: event.target.value }))}
-                    placeholder="80,443"
-                  />
-                  <p className="text-xs text-muted-foreground">Ej: 22,80,443 (default 80).</p>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="active-timeout">Timeout por puerto (s)</Label>
-                <Input
-                  id="active-timeout"
-                  type="number"
-                  min={1}
-                  step="0.5"
-                  value={activeForm.timeout}
-                  onChange={(event) => setActiveForm((prev) => ({ ...prev, timeout: event.target.value }))}
-                />
-                <p className="text-xs text-muted-foreground">Tiempo máximo de espera antes de marcar un puerto sin respuesta.</p>
-              </div>
-              {activeError ? (
-                <p className="text-sm text-destructive" role="alert">
-                  {activeError}
-                </p>
-              ) : null}
-              {pendingActiveId ? (
-                <div className="flex flex-col gap-2 text-xs text-muted-foreground">
-                  <span>Captura activa #{pendingActiveId} en ejecución.</span>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleFinalize("abortada", pendingActiveId)}
-                    disabled={finalizing}
-                  >
-                    Detener captura activa
-                  </Button>
-                </div>
-              ) : null}
-              <Button
-                type="submit"
-                disabled={runningActive || pendingActiveId !== null}
-                className="w-full"
-                variant="secondary"
-              >
-                {runningActive || pendingActiveId ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Ejecutando...
-                  </>
-                ) : (
-                  "Iniciar captura activa"
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
       </div>
 
       <Card>
@@ -451,46 +309,43 @@ export default function CapturePage() {
           ) : sessions.length === 0 ? (
             <p className="text-sm text-muted-foreground">Aún no hay capturas registradas.</p>
           ) : (
-            <div className="overflow-hidden rounded-lg border">
-              <div className="grid grid-cols-6 bg-muted px-3 py-2 text-xs font-semibold uppercase text-muted-foreground">
-                <span>Inicio</span>
-                <span>Interfaz</span>
-                <span>Modo</span>
-                <span>Estado</span>
-                <span>Paquetes</span>
-                <span className="text-right">Bytes</span>
-              </div>
-              <div className="divide-y">
-                {paginatedSessions.map((session) => {
-                  const paquetesDisplay =
-                    session.modo === "activa" ? session.acciones_count ?? 0 : session.total_paquetes
-                  return (
-                  <button
-                    key={session.id}
-                    type="button"
-                    className={cn(
-                      "grid grid-cols-6 items-center px-3 py-2 text-left text-sm",
-                      session.id === activeSession?.id ? "bg-primary/5 text-primary" : "hover:bg-muted/60"
-                    )}
-                    onClick={() => {
-                      setSelectedId(session.id)
-                      document.getElementById("session-detail")?.scrollIntoView({ behavior: "smooth", block: "start" })
-                      toast.info(`Sesión ${session.id} seleccionada`)
-                    }}
-                  >
-                    <span>{new Date(session.inicio).toLocaleString()}</span>
-                    <span>{session.interfaz}</span>
-                    <span>
-                      <Badge variant={session.modo === "activa" ? "default" : "secondary"} className="capitalize">
-                        {session.modo}
-                      </Badge>
-                    </span>
-                    <span className="capitalize">{session.estado}</span>
-                    <span>{paquetesDisplay}</span>
-                    <span className="text-right">{formatBytes(session.total_bytes)}</span>
-                  </button>
-                )})}
-              </div>
+            <div className="w-full overflow-x-auto rounded-lg border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Inicio</TableHead>
+                    <TableHead>Interfaz</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Paquetes</TableHead>
+                    <TableHead className="text-right">Bytes</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedSessions.map((session) => {
+                    const paquetesDisplay = session.total_paquetes
+                    const isSelected = session.id === activeSession?.id
+                    return (
+                      <TableRow
+                        key={session.id}
+                        className={cn("cursor-pointer", isSelected && "bg-primary/5 text-primary")}
+                        onClick={() => {
+                          setSelectedId(session.id)
+                          document
+                            .getElementById("session-detail")
+                            ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                          toast.info(`Sesión ${session.id} seleccionada`)
+                        }}
+                      >
+                        <TableCell>{new Date(session.inicio).toLocaleString()}</TableCell>
+                        <TableCell>{session.interfaz}</TableCell>
+                        <TableCell className="capitalize">{session.estado}</TableCell>
+                        <TableCell>{paquetesDisplay}</TableCell>
+                        <TableCell className="text-right">{formatBytes(session.total_bytes)}</TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
               {totalPages > 1 ? (
                 <div className="border-t px-3 py-2">
                   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
@@ -533,20 +388,13 @@ function SessionDetail({
     )
   }
 
-  const {
-    actions,
-    loading: actionsLoading,
-    error: actionsError,
-  } = useCaptureActions(session.id, 50)
-  const isActive = session.modo === "activa"
-
   return (
     <Card id={id}>
       <CardHeader>
         <div>
           <CardTitle>Sesión #{session.id}</CardTitle>
           <CardDescription>
-            {isActive ? "Captura activa" : "Captura pasiva"} en {session.interfaz}
+            Captura pasiva en {session.interfaz}
           </CardDescription>
         </div>
       </CardHeader>
@@ -558,88 +406,36 @@ function SessionDetail({
           <Stat label="Total bytes" value={formatBytes(session.total_bytes)} />
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Stat label="Paquetes" value={session.modo === "activa" ? session.acciones_count || 0 : session.total_paquetes} />
+          <Stat label="Paquetes" value={session.total_paquetes} />
           <Stat label="Filtro" value={session.filtro_bpf || "Sin filtro"} />
           <Stat
             label="Archivos generados"
             value={`${session.archivos_count} archivos / ${formatBytes(session.total_bytes)}`}
           />
         </div>
-        {isActive ? (
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">Acciones registradas</p>
-            {actionsLoading ? (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" /> Recopilando sondas...
-              </div>
-            ) : actionsError ? (
-              <p className="text-sm text-destructive">{actionsError}</p>
-            ) : actions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Todavía no hay resultados para esta captura.</p>
-            ) : (
-              <div className="overflow-hidden rounded border">
-                <div className="grid grid-cols-5 bg-muted px-3 py-2 text-xs font-semibold uppercase text-muted-foreground">
-                  <span>Puerto</span>
-                  <span>Protocolo</span>
-                  <span>Estado</span>
-                  <span>Latencia</span>
-                  <span>Detalle</span>
-                </div>
-                <div className="divide-y">
-                  {actions.map((action) => {
-                    const resultado = (action.resultado || {}) as Record<string, unknown>
-                    const estado = typeof resultado.estado === "string" ? resultado.estado : "desconocido"
-                    const latencia =
-                      typeof resultado.latencia_ms === "number"
-                        ? `${resultado.latencia_ms} ms`
-                        : typeof resultado.latencia === "number"
-                          ? `${resultado.latencia} ms`
-                          : "-"
-                    const detalle =
-                      typeof resultado.detalle === "string"
-                        ? resultado.detalle
-                        : typeof resultado.protocolo === "string"
-                          ? resultado.protocolo
-                          : action.tipo
-                    return (
-                      <div key={action.id} className="grid grid-cols-5 px-3 py-2 text-sm">
-                        <span>{action.puerto}</span>
-                        <span className="uppercase">{action.tipo.replace("_", " ")}</span>
-                        <span className="capitalize">{estado}</span>
-                        <span>{latencia}</span>
-                        <span className="truncate text-muted-foreground">{detalle}</span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div>
-            <p className="mb-2 text-sm font-medium text-muted-foreground">Estadísticas rápidas</p>
-            {statsLoading ? (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" /> Calculando...
-              </div>
-            ) : stats ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <Stat label="Hosts únicos" value={stats.hosts_unicos} />
-                <Stat label="Puertos únicos" value={stats.puertos_unicos} />
-                <Stat
-                  label="Ancho promedio"
-                  value={stats.ancho_banda_promedio ? `${stats.ancho_banda_promedio.toFixed(2)} Mbps` : "N/A"}
-                />
-                <Stat
-                  label="Ancho pico"
-                  value={stats.ancho_banda_pico ? `${stats.ancho_banda_pico.toFixed(2)} Mbps` : "N/A"}
-                />
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">Aún no hay estadísticas para esta sesión.</p>
-            )}
-          </div>
-        )}
+        <div>
+          <p className="mb-2 text-sm font-medium text-muted-foreground">Estadísticas rápidas</p>
+          {statsLoading ? (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Calculando...
+            </div>
+          ) : stats ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Stat label="Hosts únicos" value={stats.hosts_unicos} />
+              <Stat label="Puertos únicos" value={stats.puertos_unicos} />
+              <Stat
+                label="Ancho promedio"
+                value={stats.ancho_banda_promedio ? `${stats.ancho_banda_promedio.toFixed(2)} Mbps` : "N/A"}
+              />
+              <Stat
+                label="Ancho pico"
+                value={stats.ancho_banda_pico ? `${stats.ancho_banda_pico.toFixed(2)} Mbps` : "N/A"}
+              />
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Aún no hay estadísticas para esta sesión.</p>
+          )}
+        </div>
       </CardContent>
     </Card>
   )

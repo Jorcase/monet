@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 import { Link } from "react-router-dom"
 
+import { AlertBell } from "@/components/alert-bell"
 import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
@@ -107,12 +108,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
-              <Link to="/dashboard">
-                <SatelliteDishIcon className="h-5 w-5" />
-                <span className="text-base font-semibold">Monet</span>
-              </Link>
-            </SidebarMenuButton>
+            <div className="flex items-center gap-2">
+              <SidebarMenuButton
+                asChild
+                className="flex-1 data-[slot=sidebar-menu-button]:!p-1.5"
+              >
+                <Link to="/dashboard">
+                  <SatelliteDishIcon className="h-5 w-5" />
+                  <span className="text-base font-semibold">Monet</span>
+                </Link>
+              </SidebarMenuButton>
+              <AlertBell className="shrink-0 group-data-[state=collapsed]:hidden group-data-[collapsible=icon]:hidden" />
+            </div>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
