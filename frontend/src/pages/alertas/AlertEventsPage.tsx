@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 import { CheckCircle, Loader2 } from "lucide-react"
 
@@ -46,8 +46,10 @@ const MODULES = [
 export default function AlertEventsPage() {
   const [severityFilter, setSeverityFilter] = useState("todas")
   const [moduleFilter, setModuleFilter] = useState("todos")
-  const [onlyOpen, setOnlyOpen] = useState(true)
-  const [limit, setLimit] = useState(200)
+  const [onlyOpen, setOnlyOpen] = useState(false)
+  const [limit, setLimit] = useState(500)
+  const [page, setPage] = useState(1)
+  const pageSize = 10
   const [selectedEvent, setSelectedEvent] = useState<AnalyticsEvent | null>(null)
   const detailRef = useRef<HTMLDivElement>(null)
   const eventFilters = useMemo(
@@ -59,7 +61,11 @@ export default function AlertEventsPage() {
     }),
     [severityFilter, moduleFilter, onlyOpen, limit]
   )
-  const { events, loading, error, reload, setEvents } = useAnalyticsEvents(eventFilters)
+  const { events, loading, error, setEvents } = useAnalyticsEvents(eventFilters)
+
+  useEffect(() => {
+    setPage(1)
+  }, [events, severityFilter, moduleFilter, onlyOpen, limit])
 
   const handleMark = async (event: AnalyticsEvent, notificado: boolean) => {
     try {
@@ -75,6 +81,12 @@ export default function AlertEventsPage() {
   }
 
   const formattedEvents = useMemo(() => events, [events])
+  const totalPages = Math.max(1, Math.ceil(formattedEvents.length / pageSize))
+  const currentPage = Math.min(page, totalPages)
+  const visibleEvents = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return formattedEvents.slice(start, start + pageSize)
+  }, [formattedEvents, currentPage])
 
   const handleSelectEvent = (event: AnalyticsEvent) => {
     setSelectedEvent(event)
@@ -149,51 +161,76 @@ export default function AlertEventsPage() {
             ) : formattedEvents.length === 0 ? (
               <p className="text-sm text-muted-foreground">No se encontraron eventos.</p>
             ) : (
-              <div className="w-full overflow-x-auto rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Fecha</TableHead>
-                      <TableHead>Severidad</TableHead>
-                      <TableHead>Regla</TableHead>
-                      <TableHead>Dispositivo</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead />
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {formattedEvents.map((event) => (
-                      <TableRow
-                        key={event.id}
-                        className="cursor-pointer"
-                        onClick={() => handleSelectEvent(event)}
-                      >
-                        <TableCell>{new Date(event.ts).toLocaleString()}</TableCell>
-                        <TableCell>
-                          <Badge variant={severityToVariant(event.severidad)} className="capitalize">
-                            {renderSeverity(event.severidad)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{event.regla_detalle?.nombre ?? `Regla #${event.regla}`}</TableCell>
-                        <TableCell>{event.dispositivo?.hostname || event.dispositivo?.ip || "—"}</TableCell>
-                        <TableCell>{event.notificado ? "Notificado" : "Pendiente"}</TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleMark(event, !event.notificado)
-                            }}
-                          >
-                            <CheckCircle className="mr-1 h-4 w-4" />
-                            {event.notificado ? "Reabrir" : "Notificar"}
-                          </Button>
-                        </TableCell>
+              <div className="space-y-3">
+                <div className="w-full overflow-x-auto rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Fecha</TableHead>
+                        <TableHead>Severidad</TableHead>
+                        <TableHead>Regla</TableHead>
+                        <TableHead>Dispositivo</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead />
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {visibleEvents.map((event) => (
+                        <TableRow
+                          key={event.id}
+                          className="cursor-pointer"
+                          onClick={() => handleSelectEvent(event)}
+                        >
+                          <TableCell>{new Date(event.ts).toLocaleString()}</TableCell>
+                          <TableCell>
+                            <Badge variant={severityToVariant(event.severidad)} className="capitalize">
+                              {renderSeverity(event.severidad)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{event.regla_detalle?.nombre ?? `Regla #${event.regla}`}</TableCell>
+                          <TableCell>{event.dispositivo?.hostname || event.dispositivo?.ip || "—"}</TableCell>
+                          <TableCell>{event.notificado ? "Notificado" : "Pendiente"}</TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleMark(event, !event.notificado)
+                              }}
+                            >
+                              <CheckCircle className="mr-1 h-4 w-4" />
+                              {event.notificado ? "Reabrir" : "Notificar"}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>
+                    Página {currentPage} de {totalPages} · {formattedEvents.length} eventos
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      Anterior
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      Siguiente
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>
@@ -207,12 +244,14 @@ export default function AlertEventsPage() {
           <CardContent className="space-y-3 text-sm">
             {selectedEvent ? (
               <>
-                <div>
+                <div className="space-y-1">
                   <p className="text-xs uppercase text-muted-foreground">Regla</p>
                   <p className="font-medium">{selectedEvent.regla_detalle?.nombre}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {renderModule(selectedEvent.regla_detalle?.modulo_objetivo ?? "")}
-                  </p>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Badge variant="outline" className="capitalize">
+                      {renderModule(selectedEvent.regla_detalle?.modulo_objetivo ?? "desconocido")}
+                    </Badge>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant={severityToVariant(selectedEvent.severidad)} className="capitalize">

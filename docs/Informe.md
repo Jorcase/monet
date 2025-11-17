@@ -237,8 +237,22 @@ trabajando con la api para configurarla correctamente y autenticacion
   - Se creó `analyticsService` y hooks para reglas/eventos; nuevas páginas (`/alertas/reglas`, `/alertas/eventos`) permiten listar, filtrar, editar y marcar eventos como notificados con scroll animado al detalle.
   - El sidebar y el header incluyen el botón de tema (`ThemeToggle`) y la campana (`AlertBell`). El popover muestra las alertas pendientes, permite marcarlas individualmente o todas juntas, y consume el endpoint `POST /api/alertas/<id>/notificado/` agregado para resolver los 404. También se integró un contador que sólo considera severidades media/alta/crítica.
   - Actualizamos `App.tsx` para registrar las nuevas rutas y mantenemos `Sonner` con soporte de tema.
+# Anotaciones 151125
+- Captura: ahora almacenamos metadatos L7 en cada flujo (proto base, SNI, ALPN, JA3, flag DoH/DoT, categoría de dominio) y añadimos el modelo `DominioCategoria` editable desde `/api/dominios/`. Se incluyen listas de resolvers DoH/DoT y categorías por defecto.
+- Heurística de impresoras: el escáner marca “impresora” si ve puertos 9100/515/631; la captura refuerza por tráfico IPP/puertos. SNMP opcional (clave `MONET_SNMP_PRINTER=1`) intenta `sysDescr` para confirmar vendor/modelo.
+- API: serializers y endpoints actualizados para exponer los campos L7, la nueva categoría y gestionar dominios; agregado `pysnmp` al requirements (instalación manual cuando haya red).
+
+
 # Tareas por hacer cuando funcione todo lo basico
+dashboard,paquetes
+Aumentar el tiempo de activos
+Ver de que análisis se consideran recientes
 
 
 5. Integracion nube
 6. Envio de correos/notificaciones, reportes pdf/csv, tareas programadas(cron/celery)
+
+
+activar modo promiscuo linux 
+sudo ip link set enp3s0 promisc on/off
+verificar: ip link show enp3s0

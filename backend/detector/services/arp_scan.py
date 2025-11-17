@@ -40,12 +40,12 @@ def perform_arp_scan(
         try:
             from scapy.all import ARP as _ARP, Ether as _Ether, srp as _srp
         except Exception as exc:  # pragma: no cover
-            raise RuntimeError("Scapy no está disponible, ejecute con permisos o instale dependencias.") from exc
+            raise RuntimeError("Scapy no esta disponible, ejecute con permisos o instale dependencias.") from exc
         else:
             ARP, Ether, srp = _ARP, _Ether, _srp
             SCAPY_IMPORT_ERROR = None
 
-    arp = ARP(pdst=str(network)) # se elige el rango a descubrir
+    arp = ARP(pdst=str(network)) 
     ether = Ether(dst="ff:ff:ff:ff:ff:ff") #broadcast
     packet = ether / arp   #construccion de paquetes 
 
@@ -55,12 +55,12 @@ def perform_arp_scan(
 
     for _ in range(max_attempts):
         try:
-            answered, _ = srp(
+            answered, _ = srp( #send receive
                 packet,
                 timeout=timeout,
                 iface=interface,
                 retry=retry,
-                verbose=False,
+                verbose=False, #print de progreso de scapy desactivados
             )
             answered_total.extend(answered)
         except PermissionError as exc:
@@ -75,7 +75,7 @@ def perform_arp_scan(
     skip_ips = set()
     if local_ip:
         skip_ips.add(str(local_ip))
-    skip_ips.add(str(network.broadcast_address))
+    skip_ips.add(str(network.broadcast_address))#ips que no seran tenidas en cuenta
 
     resultados = {}
 
@@ -83,7 +83,7 @@ def perform_arp_scan(
         socket.setdefaulttimeout(1)
 
     for enviado, reply in answered_total:
-        ip_respuesta = reply.psrc
+        ip_respuesta = reply.psrc #funcion de scpy
 
         if ip_respuesta in skip_ips:
             continue
@@ -103,10 +103,10 @@ def perform_arp_scan(
         timestamp = None
         reply_time = getattr(reply, "time", None)
         if reply_time:
-            timestamp = timezone.make_aware(datetime.fromtimestamp(reply_time))
+            timestamp = timezone.make_aware(datetime.fromtimestamp(reply_time))#conversion a datetime del reply time
         else:
             timestamp = timezone.now()
-
+        #actualizacion de primera y ultima vez
         if ip_respuesta in resultados:
             entry = resultados[ip_respuesta]
             if timestamp < entry["first_seen"]:

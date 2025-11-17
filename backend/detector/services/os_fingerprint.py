@@ -10,7 +10,7 @@ from detector.models import Dispositivo
 
 
 def _run_nmap_os(ip: str, timeout: int = 60) -> Optional[dict]:
-    nmap_bin = shutil.which("nmap")
+    nmap_bin = shutil.which("nmap") #usamos el nmap del sistema, a futuro cambiar a la libreria de nmap
     if not nmap_bin:
         return None
 

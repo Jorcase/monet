@@ -6,7 +6,7 @@ from django.utils import timezone
 from escaner.models import TrabajoScanner
 from escaner.services.port_scan import run_port_scan
 from escaner.services.persistence import guardar_resultados
-
+# Orquestador del modulo
 def ejecutar_trabajo(
         trabajo: TrabajoScanner,
         targets: Iterable[str],

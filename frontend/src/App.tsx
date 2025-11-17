@@ -24,6 +24,10 @@ import AlertRulesPage from "@/pages/alertas/AlertRulesPage"
 import AlertEventsPage from "@/pages/alertas/AlertEventsPage"
 import PortsPage from "@/pages/escaneos/PortsPage"
 import PortDetailPage from "@/pages/escaneos/PortDetailPage"
+import FlowsPage from "@/pages/capturas/FlowsPage"
+import DomainCategoriesPage from "@/pages/capturas/DomainCategoriesPage"
+import FlowDetailPage from "@/pages/capturas/FlowDetailPage"
+import SessionDetailPage from "@/pages/capturas/SessionDetailPage"
 import { GuestRoute, ProtectedRoute } from "@/routes/ProtectedRoute"
 
 export default function App() {
@@ -61,15 +65,10 @@ export default function App() {
                   />
                   <Route path="/captura" element={<CapturePage />} />
                   <Route path="/captura/sesiones" element={<CapturePage />} />
-                  <Route
-                    path="/captura/paquetes"
-                    element={
-                      <PlaceholderPage
-                        title="Paquetes"
-                        description="Explorá paquetes y archivos PCAP almacenados."
-                      />
-                    }
-                  />
+                  <Route path="/captura/sesiones/:sessionId" element={<SessionDetailPage />} />
+                  <Route path="/captura/paquetes" element={<FlowsPage />} />
+                  <Route path="/captura/paquetes/:flowId" element={<FlowDetailPage />} />
+                  <Route path="/captura/dominios" element={<DomainCategoriesPage />} />
                   <Route path="/escaner" element={<ScannerPage />} />
                   <Route path="/escaner/puertos" element={<PortsPage />} />
                   <Route path="/escaner/puertos/:portId" element={<PortDetailPage />} />

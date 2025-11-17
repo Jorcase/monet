@@ -63,8 +63,22 @@ export interface CaptureFlow {
   tcp_mss: number | null
   tcp_opciones: string
   payload_muestra: string
+  proto_aplicacion: string
+  sni: string
+  alpn: string
+  ja3: string
+  es_doh_dot: boolean
+  categoria_dominio: string
   dispositivo_origen: DetectorDevice | null
   dispositivo_destino: DetectorDevice | null
+}
+
+export interface DomainCategory {
+  id: number
+  sufijo: string
+  categoria: string
+  activo: boolean
+  creado: string
 }
 
 export interface DetectorDevice {
@@ -78,7 +92,6 @@ export interface DetectorDevice {
   estado: string | null
   tipo_dispositivo: string | null
   tipo_fuente: string | null
-  metodo_identificacion: string | null
   sistema_operativo: string | null
   fuente_fingerprint: string | null
   ultima_fingerprint: string | null

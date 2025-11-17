@@ -25,10 +25,6 @@ def get_local_network() -> NetworkSnapshot:
 
 
 def build_local_host_entry(snapshot: NetworkSnapshot) -> dict:
-    """
-    Genera una entrada compatible con persist_scan_results para representar
-    al propio agente dentro del análisis.
-    """
     return {
         "ip": str(snapshot.ip_local),
         "mac": snapshot.mac.lower() if snapshot.mac else "",

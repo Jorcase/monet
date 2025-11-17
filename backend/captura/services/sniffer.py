@@ -34,10 +34,7 @@ def run_passive_capture(
     local_macs: Optional[Sequence[str]] = None,
     stop_event: Optional[Event] = None,
 ) -> None:
-    """
-    Ejecuta una captura pasiva sobre la interfaz indicada y persiste los flujos.
-    Requiere permisos de root para que Scapy pueda abrir la interfaz en modo promiscuo.
-    """
+
     if sniff is None:
         raise CaptureUnavailable("Scapy no está instalado.")
 

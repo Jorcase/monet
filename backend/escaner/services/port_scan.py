@@ -4,10 +4,9 @@ import re
 import nmap
 
 def _build_target_list(targets: Iterable[str]) -> str:
-    return " ".join(targets)
+    return " ".join(targets)# Lista iterable de objetivos en una cadena separada por espacios que es el formato que espera nmap.porscanner.scan
 
 def normalize_port_list(cadena: str) -> str:
-    """Normaliza la lista de puertos personalizados a formato aceptado por nmap."""
     tokens = re.split(r"[,\s]+", cadena.strip())
     cleaned: list[str] = []
     for token in tokens:

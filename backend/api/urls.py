@@ -27,6 +27,7 @@ from api.views import (
     CapturaRunView,
     CapturaFinalizarView,
     HeuristicaEventoNotificadoView,
+    DominioCategoriaViewSet,
 )
 
 router = DefaultRouter()
@@ -37,6 +38,7 @@ router.register(r"puertos", PuertoEncontradoViewSet, basename="puerto")
 router.register(r"puertos-resumen", PuertoResumenViewSet, basename="puerto-resumen")
 router.register(r"alertas", HeuristicaEventoViewSet, basename="alerta")
 router.register(r"reglas", HeuristicaReglaViewSet, basename="regla")
+router.register(r"dominios", DominioCategoriaViewSet, basename="dominio-categoria")
 
 urlpatterns = [
     path("auth/csrf/", CsrfTokenView.as_view(), name="auth-csrf"),

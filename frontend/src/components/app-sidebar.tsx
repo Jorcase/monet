@@ -1,14 +1,9 @@
 import * as React from "react"
 import {
-  BookCopyIcon,
-  CpuIcon,
-  DatabaseIcon,
   GitBranchIcon,
-  HardDriveIcon,
   LayoutDashboardIcon,
   NetworkIcon,
   PackageSearchIcon,
-  RadarIcon,
   SatelliteDishIcon,
   ServerCogIcon,
   ShieldAlertIcon,
@@ -16,7 +11,6 @@ import {
 import { Link } from "react-router-dom"
 
 import { AlertBell } from "@/components/alert-bell"
-import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import {
@@ -45,7 +39,7 @@ const data = {
     {
       title: "Detector de dispositivos",
       url: "/detector",
-      icon: RadarIcon,
+      icon: NetworkIcon,
     },
     {
       title: "Escáner de Puertos",
@@ -61,41 +55,6 @@ const data = {
       title: "Alertas",
       url: "/alertas",
       icon: ShieldAlertIcon,
-    },
-  ],
-  details: [
-    {
-      title: "Agente",
-      items: [{ name: "Agentes", url: "/agente/agentes", icon: NetworkIcon }],
-    },
-    {
-      title: "Detector",
-      items: [
-        { name: "Dispositivos", url: "/detector/dispositivos", icon: HardDriveIcon },
-        { name: "Hosts", url: "/detector/hosts", icon: CpuIcon },
-        { name: "Análisis", url: "/detector/analisis", icon: DatabaseIcon },
-      ],
-    },
-    {
-      title: "Escaner",
-      items: [
-        { name: "Puertos", url: "/escaner/puertos", icon: PackageSearchIcon },
-        { name: "Escáneres", url: "/escaner/escanners", icon: ServerCogIcon },
-      ],
-    },
-    {
-      title: "Capturas",
-      items: [
-        { name: "Paquetes", url: "/captura/paquetes", icon: BookCopyIcon },
-        { name: "Sesiones", url: "/captura/sesiones", icon: DatabaseIcon },
-      ],
-    },
-    {
-      title: "Alertas",
-      items: [
-        { name: "Reglas", url: "/alertas/reglas", icon: ShieldAlertIcon },
-        { name: "Eventos", url: "/alertas/eventos", icon: ServerCogIcon },
-      ],
     },
   ],
 }
@@ -125,13 +84,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent className="space-y-6">
         <NavMain items={data.navMain} />
-        <NavDocuments groups={data.details} />
       </SidebarContent>
       <SidebarFooter className="space-y-2">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <a href="https://github.com/tu-repo" target="_blank" rel="noreferrer">
+              <a href="https://github.com/Jorcase/monet" target="_blank" rel="noreferrer">
                 <GitBranchIcon />
                 <span>Repositorio</span>
               </a>

@@ -6,7 +6,10 @@ from django.db import transaction
 
 from captura.models import CapturaFlujo
 from captura.services.aggregator import FlowRecord
+from captura.services.domain_categories import categorize_domain
 from detector.models import Dispositivo
+from detector.services.device_type import set_device_type
+from detector.services.snmp_printer import snmp_enabled, snmp_printer_info
 
 
 def persist_flows(sesion, records: Iterable[FlowRecord]) -> None:
@@ -17,6 +20,11 @@ def persist_flows(sesion, records: Iterable[FlowRecord]) -> None:
     for record in records:
         dispositivo_origen = _resolve_device(record.accumulator.src_mac, record.key.src_ip, device_cache)
         dispositivo_destino = _resolve_device(record.accumulator.dst_mac, record.key.dst_ip, device_cache)
+        categoria = categorize_domain(record.accumulator.sni)
+        _maybe_mark_printer(dispositivo_origen, record)
+        _maybe_mark_printer(dispositivo_destino, record)
+        _maybe_snmp_printer(dispositivo_origen)
+        _maybe_snmp_printer(dispositivo_destino)
 
         objetos.append(
             CapturaFlujo(
@@ -41,6 +49,12 @@ def persist_flows(sesion, records: Iterable[FlowRecord]) -> None:
                 tcp_mss=record.accumulator.tcp_mss,
                 tcp_opciones=record.accumulator.opciones_texto(),
                 payload_muestra=record.accumulator.payload_sample,
+                proto_aplicacion=record.accumulator.proto_aplicacion,
+                sni=record.accumulator.sni,
+                alpn=record.accumulator.alpn,
+                ja3=record.accumulator.ja3,
+                es_doh_dot=record.accumulator.es_doh_dot,
+                categoria_dominio=categoria,
                 dispositivo_origen=dispositivo_origen,
                 dispositivo_destino=dispositivo_destino,
             )
@@ -63,3 +77,24 @@ def _resolve_device(mac: Optional[str], ip: str, cache: Dict[str, Optional[Dispo
 
     cache[key] = device
     return device
+
+
+def _maybe_mark_printer(device: Optional[Dispositivo], record: FlowRecord) -> None:
+    if not device:
+        return
+    puerto_set = {record.key.src_port, record.key.dst_port}
+    if 9100 in puerto_set or 515 in puerto_set or 631 in puerto_set:
+        set_device_type(device, "impresora", fuente="captura")
+        return
+    if record.accumulator.proto_aplicacion == "ipp":
+        set_device_type(device, "impresora", fuente="captura")
+
+
+def _maybe_snmp_printer(device: Optional[Dispositivo]) -> None:
+    if not device or not snmp_enabled():
+        return
+    if device.tipo_dispositivo == "impresora":
+        return
+    descripcion = snmp_printer_info(device.ip)
+    if descripcion and any(keyword in descripcion.lower() for keyword in ["printer", "hp", "epson", "brother", "canon"]):
+        set_device_type(device, "impresora", fuente="captura")

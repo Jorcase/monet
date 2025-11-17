@@ -22,7 +22,8 @@ export default function AlertsPage() {
     loading: rulesLoading,
     error: rulesError,
   } = useAnalyticsRules()
-  const eventsFilters = useMemo(() => ({ limit: 5 }), [])
+  // Traemos suficientes eventos para métricas y luego hacemos slicing local para el listado corto.
+  const eventsFilters = useMemo(() => ({ limit: 500 }), [])
   const {
     events,
     loading: eventsLoading,

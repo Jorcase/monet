@@ -28,7 +28,7 @@ class DispositivoAdmin(admin.ModelAdmin):
         "estado",
         "ultima_vez",
     )
-    list_filter = ("estado", "tipo_dispositivo", "mac_aleatoria", "es_temporal", "metodo_identificacion")
+    list_filter = ("estado", "tipo_dispositivo", "mac_aleatoria")
     search_fields = ("mac", "ip", "hostname", "vendor")
 
 

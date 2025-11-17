@@ -21,6 +21,7 @@ from captura.models import (
     CapturaFlujo,
     CapturaEstadistica,
     FingerprintObservacion,
+    DominioCategoria,
 )
 from captura.services.session import (
     create_capture_session,
@@ -40,6 +41,7 @@ from api.serializers import (
     CapturaFlujoSerializer,
     CapturaEstadisticaSerializer,
     FingerprintObservacionSerializer,
+    DominioCategoriaSerializer,
     TrabajoScannerSerializer,
     PuertoEncontradoSerializer,
     PuertoResumenSerializer,
@@ -487,6 +489,14 @@ class HeuristicaReglaViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         serializer.save()
+
+
+class DominioCategoriaViewSet(viewsets.ModelViewSet):
+    serializer_class = DominioCategoriaSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return DominioCategoria.objects.all().order_by("sufijo")
 
 
 

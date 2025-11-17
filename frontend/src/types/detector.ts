@@ -5,12 +5,10 @@ export interface DetectorDevice {
   ip: string
   mac: string
   mac_aleatoria: boolean
-  es_temporal: boolean
   vendor: string
   estado: string
   tipo_dispositivo: string
   tipo_fuente: string
-  metodo_identificacion: string
   sistema_operativo: string
   fuente_fingerprint: string
   primera_vez: string

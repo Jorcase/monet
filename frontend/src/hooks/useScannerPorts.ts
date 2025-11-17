@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 
 import { scannerService } from "@/services/scannerService"
 import type { ScannerPort } from "@/types/scanner"
@@ -15,11 +15,14 @@ export function useScannerPorts(params?: {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const paramsKey = useMemo(() => JSON.stringify(params ?? {}), [params])
+  const stableParams = useMemo(() => params ?? {}, [paramsKey])
+
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const data = await scannerService.fetchScannerPorts(params)
+      const data = await scannerService.fetchScannerPorts(stableParams)
       setPorts(data)
     } catch (err) {
       setPorts([])
@@ -27,7 +30,7 @@ export function useScannerPorts(params?: {
     } finally {
       setLoading(false)
     }
-  }, [params])
+  }, [stableParams, paramsKey])
 
   useEffect(() => {
     load()

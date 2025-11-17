@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useMemo, useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 import { Loader2, Play } from "lucide-react"
 
@@ -21,9 +22,7 @@ import {
 import { useCaptureSessions } from "@/hooks/useCaptureSessions"
 import { useRunCapture } from "@/hooks/useRunCapture"
 import { useFinalizeCapture } from "@/hooks/useFinalizeCapture"
-import { useCaptureStats } from "@/hooks/useCaptureStats"
-import type { CaptureSession } from "@/types/capture"
-import { cn } from "@/lib/utils"
+
 
 const ORIGINS = [
   { value: "manual", label: "Manual" },
@@ -32,17 +31,9 @@ const ORIGINS = [
 ]
 
 export default function CapturePage() {
+  const navigate = useNavigate()
   const { sessions, loading, error, reload } = useCaptureSessions(20)
-  const [selectedId, setSelectedId] = useState<number | undefined>()
   const [pendingPassiveId, setPendingPassiveId] = useState<number | null>(null)
-  const activeSession = useMemo(() => {
-    return sessions.find((s) => s.id === selectedId) ?? sessions[0]
-  }, [sessions, selectedId])
-  const {
-    stats,
-    loading: statsLoading,
-    reload: reloadStats,
-  } = useCaptureStats(activeSession?.id)
   const { run, loading: runningPassive, error: passiveError } = useRunCapture()
   const { finalize, loading: finalizing } = useFinalizeCapture()
 
@@ -51,12 +42,6 @@ export default function CapturePage() {
   const [passiveBuilder, setPassiveBuilder] = useState({ protocolo: "any", host: "", puerto: "" })
   const [page, setPage] = useState(1)
   const pageSize = 7
-
-  useEffect(() => {
-    if (sessions.length && !selectedId) {
-      setSelectedId(sessions[0].id)
-    }
-  }, [sessions, selectedId])
 
   useEffect(() => {
     const totalPages = Math.max(1, Math.ceil(sessions.length / pageSize))
@@ -84,10 +69,7 @@ export default function CapturePage() {
         description: target.observaciones || "Revisá los logs para más detalle.",
       })
     }
-    if (target.id === activeSession?.id) {
-      reloadStats()
-    }
-  }, [sessions, pendingPassiveId, activeSession?.id, reloadStats])
+  }, [sessions, pendingPassiveId])
 
   useEffect(() => {
     if (!pendingPassiveId) {
@@ -128,20 +110,16 @@ export default function CapturePage() {
       })
       setPassiveForm((prev) => ({ ...prev, filtro: "" }))
       await reload()
-      setSelectedId(result.id)
       setPendingPassiveId(result.id)
     }
   }
 
   const handleFinalize = async (estado: "completada" | "abortada", sessionId?: number) => {
-    const targetId = sessionId ?? activeSession?.id
+    const targetId = sessionId
     if (!targetId) return
-    const result = await finalize(targetId, { estado })
-    if (result) {
-      toast.success(`Sesión ${estado === "completada" ? "finalizada" : "abortada"}`)
-      await reload()
-      setSelectedId(result.id)
-    }
+    await finalize(targetId, { estado })
+    toast.success(`Sesión ${estado === "completada" ? "finalizada" : "abortada"}`)
+    await reload()
   }
 
   return (
@@ -321,29 +299,19 @@ export default function CapturePage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedSessions.map((session) => {
-                    const paquetesDisplay = session.total_paquetes
-                    const isSelected = session.id === activeSession?.id
-                    return (
-                      <TableRow
-                        key={session.id}
-                        className={cn("cursor-pointer", isSelected && "bg-primary/5 text-primary")}
-                        onClick={() => {
-                          setSelectedId(session.id)
-                          document
-                            .getElementById("session-detail")
-                            ?.scrollIntoView({ behavior: "smooth", block: "start" })
-                          toast.info(`Sesión ${session.id} seleccionada`)
-                        }}
-                      >
-                        <TableCell>{new Date(session.inicio).toLocaleString()}</TableCell>
-                        <TableCell>{session.interfaz}</TableCell>
-                        <TableCell className="capitalize">{session.estado}</TableCell>
-                        <TableCell>{paquetesDisplay}</TableCell>
-                        <TableCell className="text-right">{formatBytes(session.total_bytes)}</TableCell>
-                      </TableRow>
-                    )
-                  })}
+                  {paginatedSessions.map((session) => (
+                    <TableRow
+                      key={session.id}
+                      className="cursor-pointer"
+                      onClick={() => navigate(`/captura/sesiones/${session.id}`)}
+                    >
+                      <TableCell>{new Date(session.inicio).toLocaleString()}</TableCell>
+                      <TableCell>{session.interfaz}</TableCell>
+                      <TableCell className="capitalize">{session.estado}</TableCell>
+                      <TableCell>{session.total_paquetes}</TableCell>
+                      <TableCell className="text-right">{formatBytes(session.total_bytes)}</TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
               {totalPages > 1 ? (
@@ -356,96 +324,6 @@ export default function CapturePage() {
         </CardContent>
       </Card>
 
-      <SessionDetail
-        id="session-detail"
-        session={activeSession}
-        statsLoading={statsLoading}
-        stats={stats}
-      />
-    </div>
-  )
-}
-
-function SessionDetail({
-  session,
-  stats,
-  statsLoading,
-  id,
-}: {
-  session?: CaptureSession
-  stats: ReturnType<typeof useCaptureStats>["stats"]
-  statsLoading: boolean
-  id?: string
-}) {
-  if (!session) {
-    return (
-      <Card id={id}>
-        <CardHeader>
-          <CardTitle>Detalle de sesión</CardTitle>
-          <CardDescription>Seleccioná una sesión en el panel anterior.</CardDescription>
-        </CardHeader>
-      </Card>
-    )
-  }
-
-  return (
-    <Card id={id}>
-      <CardHeader>
-        <div>
-          <CardTitle>Sesión #{session.id}</CardTitle>
-          <CardDescription>
-            Captura pasiva en {session.interfaz}
-          </CardDescription>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Stat label="Estado" value={session.estado} />
-          <Stat label="Inicio" value={new Date(session.inicio).toLocaleString()} />
-          <Stat label="Duración objetivo" value={session.duracion_objetivo ? `${session.duracion_objetivo} s` : "N/D"} />
-          <Stat label="Total bytes" value={formatBytes(session.total_bytes)} />
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Stat label="Paquetes" value={session.total_paquetes} />
-          <Stat label="Filtro" value={session.filtro_bpf || "Sin filtro"} />
-          <Stat
-            label="Archivos generados"
-            value={`${session.archivos_count} archivos / ${formatBytes(session.total_bytes)}`}
-          />
-        </div>
-        <div>
-          <p className="mb-2 text-sm font-medium text-muted-foreground">Estadísticas rápidas</p>
-          {statsLoading ? (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> Calculando...
-            </div>
-          ) : stats ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Stat label="Hosts únicos" value={stats.hosts_unicos} />
-              <Stat label="Puertos únicos" value={stats.puertos_unicos} />
-              <Stat
-                label="Ancho promedio"
-                value={stats.ancho_banda_promedio ? `${stats.ancho_banda_promedio.toFixed(2)} Mbps` : "N/A"}
-              />
-              <Stat
-                label="Ancho pico"
-                value={stats.ancho_banda_pico ? `${stats.ancho_banda_pico.toFixed(2)} Mbps` : "N/A"}
-              />
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">Aún no hay estadísticas para esta sesión.</p>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-function Stat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="rounded border px-3 py-2">
-      <p className="text-xs uppercase text-muted-foreground">{label}</p>
-      <p className="text-sm font-semibold">{value}</p>
     </div>
   )
 }

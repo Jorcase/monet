@@ -103,7 +103,6 @@ export default function DeviceDetailPage() {
                   {STATUS_LABELS[device.estado] ?? device.estado}
                 </Badge>
                 {device.mac_aleatoria ? <Badge variant="secondary">MAC aleatoria</Badge> : null}
-                {device.es_temporal ? <Badge variant="outline">Temporal</Badge> : null}
                 {device.tipo_dispositivo !== "desconocido" ? (
                   <Badge variant="outline">{formatLabel(device.tipo_dispositivo)}</Badge>
                 ) : null}
@@ -122,11 +121,9 @@ export default function DeviceDetailPage() {
                       : undefined
                   }
                 />
-                <InfoRow label="Método de identificación" value={formatLabel(device.metodo_identificacion)} />
                 <InfoRow label="Fuente de datos" value={formatLabel(device.tipo_fuente)} />
                 <InfoRow label="Hostname (fuente)" value={formatLabel(device.hostname_fuente)} />
                 <InfoRow label="MAC aleatoria" value={formatBoolean(device.mac_aleatoria)} />
-                <InfoRow label="Temporal" value={formatBoolean(device.es_temporal)} />
                 <InfoRow label="Primera vez visto" value={formatDate(device.primera_vez)} />
                 <InfoRow label="Última vez visto" value={formatDate(device.ultima_vez)} />
                 <InfoRow label="Fuente fingerprint" value={device.fuente_fingerprint || "Sin datos"} />

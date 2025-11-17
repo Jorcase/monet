@@ -9,6 +9,7 @@ from captura.models import (
     CapturaArchivo,
     CapturaEstadistica,
     FingerprintObservacion,
+    DominioCategoria,
 )
 from detector.models import Dispositivo, AnalisisRed, HostDetectado, DispositivoHistorial
 from escaner.models import TrabajoScanner, PuertoEncontrado, PuertoResumen
@@ -68,12 +69,10 @@ class DispositivoSerializer(serializers.ModelSerializer):
             "ip",
             "mac",
             "mac_aleatoria",
-            "es_temporal",
             "vendor",
             "estado",
             "tipo_dispositivo",
             "tipo_fuente",
-            "metodo_identificacion",
             "sistema_operativo",
             "fuente_fingerprint",
             "primera_vez",
@@ -110,6 +109,12 @@ class CapturaFlujoSerializer(serializers.ModelSerializer):
             "tcp_mss",
             "tcp_opciones",
             "payload_muestra",
+            "proto_aplicacion",
+            "sni",
+            "alpn",
+            "ja3",
+            "es_doh_dot",
+            "categoria_dominio",
             "dispositivo_origen",
             "dispositivo_destino",
         ]
@@ -126,6 +131,18 @@ class CapturaArchivoSerializer(serializers.ModelSerializer):
             "hash_archivo",
             "protegido",
             "expira_en",
+            "creado",
+        ]
+
+
+class DominioCategoriaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DominioCategoria
+        fields = [
+            "id",
+            "sufijo",
+            "categoria",
+            "activo",
             "creado",
         ]
 

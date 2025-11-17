@@ -53,7 +53,10 @@ export function NavDocuments({ groups }: { groups: DetailGroup[] }) {
                   {group.items.map((item) => (
                     <SidebarMenuSubItem key={item.name}>
                       <SidebarMenuSubButton asChild>
-                        <NavLink to={item.url}>{item.name}</NavLink>
+                        <NavLink to={item.url} className="flex items-center gap-2">
+                          <item.icon className="h-4 w-4" />
+                          {item.name}
+                        </NavLink>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   ))}

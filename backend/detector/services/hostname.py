@@ -7,7 +7,7 @@ def _reverse_dns(ip: str, timeout: float = 1.0) -> str:
         return socket.gethostbyaddr(ip)[0]
     except (socket.herror, socket.gaierror, TimeoutError, OSError):
         return ""
-
+# Revisar para mejorar a futuro
 
 def _nbns_lookup(ip: str, timeout: float = 1.0) -> str:
 

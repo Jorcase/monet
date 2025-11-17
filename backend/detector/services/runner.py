@@ -38,10 +38,12 @@ def run_detector_scan(
     except OwnerResolutionError as exc:
         raise DetectorRunError(str(exc)) from exc
 
+    resolved_type = scan_type or ("mixto" if fingerprint_os else "arp_rapido")
+
     analisis = AnalisisRed.objects.create(
         inicio=timezone.now(),
         interfaz=interfaz,
-        tipo=scan_type or "escaner-activo",
+        tipo=resolved_type,
         notas="Detección de hosts por ARP",
         owner=owner,
     )

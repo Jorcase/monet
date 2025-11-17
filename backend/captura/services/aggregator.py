@@ -7,20 +7,28 @@ from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
 from django.utils import timezone
 
 import os
+import hashlib
 
 if os.environ.get("SCAPY_SKIP_RUNTIME") == "1":
-    IP = TCP = UDP = Ether = Raw = None  # type: ignore
+    IP = TCP = UDP = Ether = Raw = ICMP = None  # type: ignore
     SCAPY_AVAILABLE = False
 else:
     try:
-        from scapy.layers.inet import IP, TCP, UDP
+        from scapy.layers.inet import IP, TCP, UDP, ICMP
         from scapy.layers.l2 import Ether
         from scapy.packet import Raw
     except ImportError:  # pragma: no cover - entorno sin scapy
-        IP = TCP = UDP = Ether = Raw = None  # type: ignore
+        IP = TCP = UDP = Ether = Raw = ICMP = None  # type: ignore
         SCAPY_AVAILABLE = False
     else:
         SCAPY_AVAILABLE = True
+
+try:  # opcional: TLS parsing mínimo
+    from scapy.layers.tls.all import TLSClientHello, TLS_Ext_ServerName, TLS_Ext_ALPN  # type: ignore
+except Exception:  # pragma: no cover
+    TLSClientHello = None  # type: ignore
+    TLS_Ext_ServerName = None  # type: ignore
+    TLS_Ext_ALPN = None  # type: ignore
 
 
 class CaptureUnavailable(RuntimeError):
@@ -53,6 +61,11 @@ class FlowAccumulator:
     tcp_window_count: int = 0
     tcp_options: Set[str] = field(default_factory=set)
     tcp_mss: Optional[int] = None
+    proto_aplicacion: str = ""
+    sni: str = ""
+    alpn: str = ""
+    ja3: str = ""
+    es_doh_dot: bool = False
 
     def ttl_promedio(self) -> Optional[int]:
         if not self.ttl_count:
@@ -84,6 +97,15 @@ class FlowAccumulator:
             self.tcp_mss = other.tcp_mss
         if not self.payload_sample and other.payload_sample:
             self.payload_sample = other.payload_sample
+        if not self.proto_aplicacion and other.proto_aplicacion:
+            self.proto_aplicacion = other.proto_aplicacion
+        if not self.sni and other.sni:
+            self.sni = other.sni
+        if not self.alpn and other.alpn:
+            self.alpn = other.alpn
+        if not self.ja3 and other.ja3:
+            self.ja3 = other.ja3
+        self.es_doh_dot = self.es_doh_dot or other.es_doh_dot
 
         if not self.src_mac and other.src_mac:
             self.src_mac = other.src_mac
@@ -254,6 +276,14 @@ class FlowAggregator:
             if payload:
                 acc.payload_sample = payload.hex()
 
+        acc.proto_aplicacion = self._infer_app_protocol(protocolo, src_port, dst_port)
+        # Extraer metadatos TLS si aplica
+        if protocolo == "tcp" and (src_port in {443, 853} or dst_port in {443, 853}):
+            self._extract_tls_metadata(packet, acc)
+        acc.es_doh_dot = self._is_doh_dot(
+            protocolo, src_port, dst_port, acc, ip_layer.src, ip_layer.dst
+        )
+
         return key, acc
 
     def _resolve_protocol(self, packet) -> str:
@@ -261,6 +291,8 @@ class FlowAggregator:
             return "tcp"
         if UDP and packet.haslayer(UDP):
             return "udp"
+        if ICMP and packet.haslayer(ICMP):
+            return "icmp"
         return "otro"
 
     def _resolve_ports(self, packet) -> Tuple[Optional[int], Optional[int]]:
@@ -280,3 +312,121 @@ class FlowAggregator:
         if dst_ip in self.local_ips and src_ip not in self.local_ips:
             return "entrada"
         return "ambas"
+
+    def _infer_app_protocol(
+        self, protocolo: str, src_port: Optional[int], dst_port: Optional[int]
+    ) -> str:
+        ports = {p for p in (src_port, dst_port) if p}
+        if protocolo == "udp" and 53 in ports:
+            return "dns"
+        if protocolo == "udp" and 123 in ports:
+            return "ntp"
+        if protocolo == "udp" and 443 in ports:
+            return "quic"
+        if protocolo == "tcp":
+            if 22 in ports:
+                return "ssh"
+            if 25 in ports or 587 in ports or 465 in ports:
+                return "smtp"
+            if 110 in ports or 995 in ports:
+                return "pop3"
+            if 143 in ports or 993 in ports:
+                return "imap"
+            if 80 in ports or 8080 in ports:
+                return "http"
+            if 443 in ports:
+                return "https"
+            if 445 in ports or 139 in ports or 137 in ports:
+                return "smb"
+            if 21 in ports:
+                return "ftp"
+            if 9100 in ports or 515 in ports or 631 in ports:
+                return "ipp"
+        return ""
+
+    def _is_doh_dot(
+        self,
+        protocolo: str,
+        src_port: Optional[int],
+        dst_port: Optional[int],
+        acc: FlowAccumulator,
+        src_ip: str,
+        dst_ip: str,
+    ) -> bool:
+        if protocolo != "tcp":
+            return False
+        if src_port == 853 or dst_port == 853:
+            return True
+        if is_doh_resolver(src_ip) or is_doh_resolver(dst_ip):
+            if src_port in {443, 853} or dst_port in {443, 853}:
+                return True
+        # Heurística simple: HTTPS hacia puerto 443 sin SNI, con ALPN h2/h3 y proto_app vacío
+        if (src_port == 443 or dst_port == 443) and not acc.sni:
+            if acc.alpn in {"h2", "h3"} or acc.proto_aplicacion == "https":
+                return True
+        return False
+
+    def _extract_tls_metadata(self, packet, acc: FlowAccumulator) -> None:
+        if TLSClientHello is None:
+            return
+        try:
+            if not packet.haslayer(TLSClientHello):  # type: ignore
+                return
+            ch = packet.getlayer(TLSClientHello)  # type: ignore
+            acc.ja3 = self._compute_ja3(ch)
+            exts = getattr(ch, "ext", []) or []
+            for ext in exts:
+                if TLS_Ext_ServerName and isinstance(ext, TLS_Ext_ServerName):  # type: ignore
+                    servernames = getattr(ext, "servernames", []) or []
+                    if servernames:
+                        name = getattr(servernames[0], "servername", b"") or b""
+                        try:
+                            acc.sni = name.decode(errors="ignore")
+                        except Exception:
+                            pass
+                if TLS_Ext_ALPN and isinstance(ext, TLS_Ext_ALPN):  # type: ignore
+                    protos = getattr(ext, "protocols", []) or []
+                    if protos:
+                        try:
+                            acc.alpn = protos[0].decode(errors="ignore")
+                        except Exception:
+                            pass
+        except Exception:
+            return
+
+    def _compute_ja3(self, ch) -> str:
+        # JA3: SSLVersion,CipherSuites,Extensions,EllipticCurves,EllipticCurvePointFormats
+        try:
+            version = str(getattr(ch, "version", ""))
+            ciphers = getattr(ch, "ciphers", []) or []
+            ciphers_str = "-".join(str(int(c)) for c in ciphers)
+            exts = getattr(ch, "ext", []) or []
+            ext_ids = []
+            curves = []
+            ec_formats = []
+            for ext in exts:
+                ext_type = getattr(ext, "type", None)
+                if ext_type is None:
+                    continue
+                ext_ids.append(str(int(ext_type)))
+                # Elliptic curves
+                if hasattr(ext, "groups"):
+                    groups = getattr(ext, "groups", []) or []
+                    curves.extend(str(int(g)) for g in groups)
+                if hasattr(ext, "ecpl"):
+                    pts = getattr(ext, "ecpl", []) or []
+                    ec_formats.extend(str(int(p)) for p in pts)
+
+            msg = ",".join(
+                [
+                    version,
+                    ciphers_str,
+                    "-".join(ext_ids),
+                    "-".join(curves),
+                    "-".join(ec_formats),
+                ]
+            )
+            return hashlib.md5(msg.encode()).hexdigest()
+        except Exception:
+            return ""
+from captura.services.domain_categories import is_doh_resolver

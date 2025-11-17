@@ -5,9 +5,9 @@ import psutil
 def collect_network_snapshot(interface_preferida: str | None = None) -> dict[str, str]:
     hostname = socket.gethostname()
 
-    interfaces = psutil.net_if_addrs()
+    interfaces = psutil.net_if_addrs() #diccionario con las interfaces y sus direcciones asociadas
     if  interface_preferida:
-        candidatos = [(interface_preferida, interfaces.get(interface_preferida, []))]
+        candidatos = [(interface_preferida, interfaces.get(interface_preferida, []))] #lista de tuplas interfaz
     else:
         candidatos = interfaces.items()
     
@@ -16,7 +16,7 @@ def collect_network_snapshot(interface_preferida: str | None = None) -> dict[str
         mac = next((addr for addr in direcciones if addr.family == psutil.AF_LINK), None)
 
         if ipv4 and ipv4.address != "127.0.0.1":
-            ip_iface = ipaddress.ip_interface(f"{ipv4.address}/{ipv4.netmask}")
+            ip_iface = ipaddress.ip_interface(f"{ipv4.address}/{ipv4.netmask}")#ej. 192.168.0.10/24
             return {
                 "interfaz": nombre_interfaz,
                 "ip_local": str(ip_iface.ip),

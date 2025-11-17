@@ -18,6 +18,8 @@ export interface CaptureFlowQuery extends Record<string, string | number | undef
   page_size?: number
   direccion?: string
   protocolo?: string
+  proto_aplicacion?: string
+  categoria_dominio?: string
   ip?: string
   search?: string
 }
@@ -35,7 +37,7 @@ export async function fetchCaptureFiles(sesionId: number, params?: { limit?: num
 }
 
 export async function fetchCaptureFlows(sesionId: number, params?: CaptureFlowQuery) {
-  return apiClient.get<PaginatedResponse<CaptureFlow>>(`/capturas/${sesionId}/flujos/`, {
+  return apiClient.get<PaginatedResponse<CaptureFlow> | CaptureFlow[]>(`/capturas/${sesionId}/flujos/`, {
     query: params,
   })
 }

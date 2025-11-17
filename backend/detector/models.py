@@ -5,12 +5,10 @@ from django.utils import timezone
 
 class AnalisisRed(models.Model):
     TIPO_CHOICES = [
-        ("escaner-activo","Escaner activo"),
-        ("captura-pasiva", "Captura pasiva"),
-        ("mixto","Mixto"),
+        ("arp_rapido", "ARP rápido"),
+        ("arp_completo", "ARP completo"),
+        ("mixto", "Mixto ARP + fingerprint"),
     ] 
-
-
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -69,17 +67,9 @@ class Dispositivo(models.Model):
     hostname_fuente = models.CharField(max_length=16, choices=FUENTE_CHOICES, default="sin_datos")
     mac_aleatoria = models.BooleanField(default=False)
     vendor = models.CharField(max_length=64, blank=True)
-    es_temporal = models.BooleanField(default=False)
     primera_vez = models.DateTimeField(default=timezone.now)
     ultima_vez = models.DateTimeField(default=timezone.now)
     estado = models.CharField(max_length=32, choices=ESTADO_CHOICES, default="desconocido")
-    METODO_IDENT_CHOICES = [
-    ("mac", "MAC"),
-    ("hostname", "Hostname"),
-    ("ip", "IP"),
-    ("manual", "Manual"),
-    ]
-    metodo_identificacion = models.CharField(max_length=16, choices=METODO_IDENT_CHOICES, default="mac")
     tipo_dispositivo = models.CharField(max_length=16, choices=TIPO_CHOICES, default="desconocido")
     tipo_fuente = models.CharField(max_length=16, choices=[("sin_datos","Sin datos"),("heuristica","Heurística"),("manual","Manual")], default="sin_datos")
     sistema_operativo = models.CharField(max_length=128, blank=True)

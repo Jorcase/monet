@@ -78,7 +78,7 @@ export default function DetectorPage() {
   const handleRun = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const iface = interfaceValue.trim()
-    const promise = run(iface || undefined, "escaner-activo", fingerprintOs, arpMode)
+    const promise = run(iface || undefined, undefined, fingerprintOs, arpMode)
     toast.promise(promise, {
       loading: "Ejecutando análisis...",
       success: "Análisis completado correctamente",

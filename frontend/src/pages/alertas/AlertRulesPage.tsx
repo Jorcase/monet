@@ -362,11 +362,9 @@ export default function AlertRulesPage() {
                     : ""
                 }
                 onBlur={(event) => handleParamChange(event.target.value)}
-                placeholder='Ej: {"threshold": 10, "interval": 60}'
+                placeholder='Ej: {"tipo": "estado_puerto", "estado": "abierto", "puertos": [80, 443], "protocolos": ["tcp"]}'
               />
-              <p className="text-xs text-muted-foreground">
-                Los parámetros dependen de cada módulo/regla.
-              </p>
+              
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setDialogOpen(false)}>

@@ -80,7 +80,6 @@ class PuertoEncontrado(models.Model):
 
 
 class PuertoResumen(models.Model):
-    """Estado consolidado de puertos observados por host/dispositivo."""
 
     dispositivo = models.ForeignKey("detector.Dispositivo", on_delete=models.SET_NULL, null=True, blank=True, related_name="puertos_resumen")
     host_ip = models.GenericIPAddressField()

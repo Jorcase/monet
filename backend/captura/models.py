@@ -6,7 +6,7 @@ from django.utils import timezone
 class CapturaSesion(models.Model):
     MODO_CHOICES = [
         ("pasiva", "Pasiva"),
-    ]
+    ] # Se podria ampliar a futuro
 
     ORIGEN_CHOICES = [
         ("manual", "Manual"),
@@ -119,7 +119,13 @@ class CapturaFlujo(models.Model):
     tcp_window_promedio = models.PositiveIntegerField(null=True, blank=True)
     tcp_mss = models.PositiveIntegerField(null=True, blank=True)
     tcp_opciones = models.CharField(max_length=128, blank=True)
-    payload_muestra = models.TextField(blank=True)
+    payload_muestra = models.TextField(blank=True) # Evaluar sacar
+    proto_aplicacion = models.CharField(max_length=64, blank=True)
+    sni = models.CharField(max_length=255, blank=True)
+    alpn = models.CharField(max_length=64, blank=True)
+    ja3 = models.CharField(max_length=64, blank=True)
+    es_doh_dot = models.BooleanField(default=False)
+    categoria_dominio = models.CharField(max_length=64, blank=True)
     dispositivo_origen = models.ForeignKey(
         "detector.Dispositivo",
         on_delete=models.SET_NULL,
@@ -147,6 +153,23 @@ class CapturaFlujo(models.Model):
 
     def __str__(self) -> str:
         return f"{self.src_ip}:{self.src_port or '-'} -> {self.dst_ip}:{self.dst_port or '-'} ({self.protocolo})"
+
+
+class DominioCategoria(models.Model):
+
+    sufijo = models.CharField(max_length=255, unique=True)
+    categoria = models.CharField(max_length=64)
+    activo = models.BooleanField(default=True)
+    creado = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "captura_dominio_categoria"
+        verbose_name = "Dominio categorizado"
+        verbose_name_plural = "Dominios categorizados"
+        ordering = ("sufijo",)
+
+    def __str__(self) -> str:
+        return f"{self.sufijo} -> {self.categoria}"
 
 
 class CapturaEstadistica(models.Model):
