@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { useScannerPorts } from "@/hooks/useScannerPorts"
 
 import { PortsDataTable } from "./PortsDataTable"
@@ -30,12 +31,12 @@ export default function PortsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 min-w-0">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between px-1">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Puertos detectados</h1>
           <p className="text-sm text-muted-foreground">
-            Explorá todos los puertos descubiertos por los trabajos del escáner.
+            Explora todos los puertos descubiertos por los trabajos del escáner.
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
@@ -55,12 +56,20 @@ export default function PortsPage() {
             </Select>
           </div>
           <Button variant="outline" disabled className="w-full sm:w-auto">
-            Exportar PDF (próximamente)
+            Exportar PDF 
           </Button>
         </div>
       </div>
 
-      <PortsDataTable data={ports} loading={loading} error={error} onRowClick={handleRowClick} />
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Listado</CardTitle>
+          <CardDescription>Puertos encontrados en los trabajos del escáner.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PortsDataTable data={ports} loading={loading} error={error} onRowClick={handleRowClick} />
+        </CardContent>
+      </Card>
     </div>
   )
 }

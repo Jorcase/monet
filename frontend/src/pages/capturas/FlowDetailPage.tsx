@@ -19,7 +19,7 @@ export default function FlowDetailPage() {
           <CardHeader>
             <CardTitle>Flujo no disponible</CardTitle>
             <CardDescription>
-              No se pudo cargar el detalle. Volvé a la lista de paquetes y seleccioná un flujo.
+              No se pudo cargar el detalle. Vuelve a la lista de paquetes y selecciona un flujo.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -74,8 +74,6 @@ export default function FlowDetailPage() {
 
           <div className="grid gap-3 md:grid-cols-2">
             <Detail label="SNI / Host">{flow.sni || "—"}</Detail>
-            <Detail label="ALPN">{flow.alpn || "—"}</Detail>
-            <Detail label="JA3">{flow.ja3 || "—"}</Detail>
             <Detail label="Paquetes / Bytes">
               {flow.paquetes} pkt · {flow.bytes.toLocaleString()} bytes
             </Detail>

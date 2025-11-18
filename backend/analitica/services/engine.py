@@ -422,7 +422,7 @@ def construir_eventos_cambio_ip(
             continue
         eventos.append(
             HeuristicaEvento(
-                regla=regra,
+                regla=regla,
                 analisis=None,
                 dispositivo=dispositivo,
                 severidad=regla.severidad_por_defecto,

@@ -27,14 +27,14 @@ const NAV_SECTIONS = [
     items: [
       { name: "Dispositivos", url: "/detector/dispositivos", icon: HardDriveIcon },
       { name: "Hosts", url: "/detector/hosts", icon: CpuIcon },
-      { name: "Análisis", url: "/detector/analisis", icon: DatabaseIcon },
+      //{ name: "Análisis", url: "/detector/analisis", icon: DatabaseIcon },
     ],
   },
   {
     title: "Escáner",
     items: [
       { name: "Puertos", url: "/escaner/puertos", icon: PackageSearchIcon },
-      { name: "Escáneres", url: "/escaner/escanners", icon: ServerCogIcon },
+      //{ name: "Escáneres", url: "/escaner/escanners", icon: ServerCogIcon },
     ],
   },
   {
@@ -42,7 +42,7 @@ const NAV_SECTIONS = [
     items: [
       { name: "Paquetes", url: "/captura/paquetes", icon: BookCopyIcon },
       { name: "Dominios", url: "/captura/dominios", icon: BookCopyIcon },
-      { name: "Sesiones", url: "/captura/sesiones", icon: DatabaseIcon },
+      //{ name: "Sesiones", url: "/captura/sesiones", icon: DatabaseIcon },
       
     ],
   },

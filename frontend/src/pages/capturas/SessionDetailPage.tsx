@@ -66,7 +66,7 @@ export default function SessionDetailPage() {
             <span>Sesión #{session.id}</span>
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">Detalle de captura</h1>
-          <p className="text-sm text-muted-foreground">Revisá los contadores y estadísticas de la sesión.</p>
+          <p className="text-sm text-muted-foreground">Revisa los contadores y estadísticas de la sesión.</p>
         </div>
         <Badge variant="outline" className="capitalize">
           {session.estado}

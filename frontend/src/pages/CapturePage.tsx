@@ -127,7 +127,7 @@ export default function CapturePage() {
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Captura de tráfico</h1>
         <p className="text-sm text-muted-foreground">
-          Ejecutá capturas pasivas y consultá el historial de sesiones.
+          Ejecuta capturas pasivas y consulta el historial de sesiones.
         </p>
       </header>
 
@@ -149,9 +149,6 @@ export default function CapturePage() {
                   onChange={(event) => setPassiveForm((prev) => ({ ...prev, interfaz: event.target.value }))}
                   placeholder="enp7s0"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Dejalo vacío para reutilizar la interfaz reportada por el agente.
-                </p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -275,7 +272,7 @@ export default function CapturePage() {
       <Card>
         <CardHeader>
           <CardTitle>Historial de sesiones</CardTitle>
-          <CardDescription>Seleccioná una sesión para revisar su resumen.</CardDescription>
+          <CardDescription>Selecciona una sesión para revisar su resumen.</CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (

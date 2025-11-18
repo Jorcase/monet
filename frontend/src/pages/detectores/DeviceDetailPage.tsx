@@ -69,7 +69,7 @@ export default function DeviceDetailPage() {
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">{device?.hostname || "Sin hostname"}</h1>
           <p className="text-sm text-muted-foreground">
-            Consultá el detalle y el historial de direcciones registradas para este dispositivo.
+            Consulta el detalle y el historial de direcciones registradas para este dispositivo.
           </p>
         </div>
         <Button variant="outline" disabled className="w-full sm:w-auto">

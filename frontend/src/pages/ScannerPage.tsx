@@ -273,18 +273,18 @@ export default function ScannerPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Escáner de puertos</h1>
           <p className="text-sm text-muted-foreground">
-            Elegí los objetivos, el tipo de escaneo y revisá el historial de trabajos y puertos.
+            Elige los objetivos, el tipo de escaneo y revisa el historial de trabajos y puertos.
           </p>
         </div>
         <Button variant="outline" disabled className="w-full sm:w-auto">
-          Exportar PDF (próximamente)
+          Exportar PDF 
         </Button>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Ejecutar escaneo</CardTitle>
-          <CardDescription>Combiná distintos objetivos y elegí el tipo de escaneo a ejecutar.</CardDescription>
+          <CardDescription>Combina distintos objetivos y elige el tipo de escaneo a ejecutar.</CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-6" onSubmit={handleSubmit}>
@@ -318,17 +318,11 @@ export default function ScannerPage() {
                         ))}
                       </div>
                     )}
-                    <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Checkbox
-                        checked={includeAllActive}
-                        onCheckedChange={() => setIncludeAllActive((prev) => !prev)}
-                      />
-                      Escanear automáticamente todos los activos
-                    </label>
+
                   </>
                 ) : (
                   <p className="text-xs text-muted-foreground">
-                    Activá esta opción para elegir dispositivos detectados recientemente.
+                    Activa esta opción para elegir dispositivos detectados recientemente.
                   </p>
                 )}
               </div>
@@ -377,7 +371,7 @@ export default function ScannerPage() {
                   </>
                 ) : (
                   <p className="text-xs text-muted-foreground">
-                    Activá esta opción para reutilizar los hosts detectados en un análisis.
+                    Activa esta opción para reutilizar los hosts detectados en un análisis.
                   </p>
                 )}
               </div>
@@ -401,11 +395,11 @@ export default function ScannerPage() {
                     className="min-h-[96px]"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Separá por comas o saltos de línea. También podés indicar rangos CIDR.
+                    Separa por comas o saltos de línea. También puedes indicar rangos CIDR.
                   </p>
                 </>
               ) : (
-                <p className="text-xs text-muted-foreground">Activá esta opción para escribir IPs específicas.</p>
+                <p className="text-xs text-muted-foreground">Activa esta opción para escribir IPs específicas.</p>
               )}
             </div>
 
@@ -439,7 +433,7 @@ export default function ScannerPage() {
                   onChange={(event) => setCustomPorts(event.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Utilizá comas o rangos (ej. 20-25). Solo obligatorio si el tipo es personalizado.
+                  Utiliza comas o rangos (ej. 20-25). Solo obligatorio si el tipo es personalizado.
                 </p>
               </div>
             </div>

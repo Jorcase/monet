@@ -100,7 +100,7 @@ export default function AlertEventsPage() {
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Eventos heurísticos</h1>
         <p className="text-sm text-muted-foreground">
-          Explorá y marcá los eventos generados por tus reglas de analítica.
+          Explora y marca los eventos generados por tus reglas de analítica.
         </p>
       </div>
 
@@ -108,7 +108,7 @@ export default function AlertEventsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Historial</CardTitle>
-            <CardDescription>Aplicá filtros para encontrar el evento que buscás.</CardDescription>
+            <CardDescription>Aplica filtros para encontrar el evento que buscás.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
@@ -239,7 +239,7 @@ export default function AlertEventsPage() {
         <Card ref={detailRef}>
           <CardHeader>
             <CardTitle>Detalle del evento</CardTitle>
-            <CardDescription>Seleccioná un evento para ver más información.</CardDescription>
+            <CardDescription>Selecciona un evento para ver más información.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             {selectedEvent ? (
@@ -282,7 +282,7 @@ export default function AlertEventsPage() {
               </>
             ) : (
               <p className="text-muted-foreground text-sm">
-                Elegí un evento en la tabla para ver los detalles aquí.
+                Elige un evento en la tabla para ver los detalles aquí.
               </p>
             )}
           </CardContent>

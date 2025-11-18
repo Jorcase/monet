@@ -154,7 +154,7 @@ export default function AlertRulesPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Reglas heurísticas</h1>
           <p className="text-sm text-muted-foreground">
-            Administrá las reglas que disparan eventos en los diferentes módulos.
+            Administra las reglas que disparan eventos en los diferentes módulos.
           </p>
         </div>
         <Button onClick={() => handleOpenDialog()} className="w-full sm:w-auto">
@@ -165,7 +165,7 @@ export default function AlertRulesPage() {
       <Card>
         <CardHeader>
           <CardTitle>Listado</CardTitle>
-          <CardDescription>Filtrá y gestioná tus reglas.</CardDescription>
+          <CardDescription>Filtra y gestiona tus reglas.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">

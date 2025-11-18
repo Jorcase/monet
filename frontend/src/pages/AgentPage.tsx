@@ -69,11 +69,11 @@ export default function AgentPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Agente de red</h1>
           <p className="text-sm text-muted-foreground">
-            Ejecutá la detección local y consultá el historial de snapshots.
+            Ejecuta la detección local y consulta el historial de snapshots.
           </p>
         </div>
         <Button variant="outline" disabled className="w-full sm:w-auto">
-          Exportar PDF (próximamente)
+          Exportar PDF 
         </Button>
       </div>
 
@@ -82,7 +82,7 @@ export default function AgentPage() {
           <CardHeader>
             <CardTitle>Ejecutar/Actualizar agente</CardTitle>
             <CardDescription>
-              Podés indicar una interfaz y un alias de tu ubicacion antes de ejecutar.
+              Puedes indicar una interfaz y un alias de tu ubicacion antes de ejecutar.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -104,7 +104,7 @@ export default function AgentPage() {
                 <Label>Alias (ubicación)</Label>
                 <LocationSelect value={ubicacion} onChange={setUbicacion} />
                 <p className="text-xs text-muted-foreground">
-                  Elegí una ubicación típica o escribí un alias propio.
+                  Elige una ubicación típica o escribí un alias propio.
                 </p>
               </div>
               {actionError ? (
@@ -145,7 +145,7 @@ export default function AgentPage() {
             ) : null}
             {!showLoader && !error && !data ? (
               <p className="text-muted-foreground">
-                Ejecutá el agente para registrar el primer snapshot.
+                Ejecuta el agente para registrar el primer snapshot.
               </p>
             ) : null}
             {data ? (
@@ -207,7 +207,7 @@ function HistorySection({
           <p className="text-sm text-destructive">{error}</p>
         ) : history.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Aún no hay registros. Ejecutá el agente para ver el historial aquí.
+            Aún no hay registros. Ejecuta el agente para ver el historial aquí.
           </p>
         ) : (
           <>

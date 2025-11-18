@@ -63,14 +63,14 @@ export default function DomainCategoriesPage() {
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Dominios categorizados</h1>
         <p className="text-sm text-muted-foreground">
-          Configurá sufijos de dominio y su categoría para etiquetar el tráfico capturado.
+          Configura sufijos de dominio y su categoría para etiquetar el tráfico capturado.
         </p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Nuevo dominio</CardTitle>
-          <CardDescription>Agregá sufijos (ej. facebook.com) y asignales una categoría.</CardDescription>
+          <CardDescription>Agrega sufijos (ej. facebook.com) y asignales una categoría.</CardDescription>
         </CardHeader>
         <CardContent>
           <form className="grid gap-4 sm:grid-cols-2" onSubmit={handleSubmit}>

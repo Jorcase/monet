@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Loader2, Search } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
 import {
@@ -10,9 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
+
 import { useCaptureSessions } from "@/hooks/useCaptureSessions"
 import { useCaptureFlows } from "@/hooks/useCaptureFlows"
 import { FlowsDataTable } from "@/pages/capturas/FlowsDataTable"
@@ -21,7 +19,7 @@ export default function FlowsPage() {
   const navigate = useNavigate()
   const { sessions, loading: sessionsLoading } = useCaptureSessions(10)
   const [selectedSession, setSelectedSession] = useState<number | undefined>()
-  const [filters, setFilters] = useState({
+  const [filters] = useState({
     search: "",
     proto: "todos",
     doh: false,
@@ -57,7 +55,7 @@ export default function FlowsPage() {
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Flujos capturados</h1>
         <p className="text-sm text-muted-foreground">
-          Explorá los paquetes agregados por sesión y revisá los metadatos L7.
+          Explora los paquetes agregados por sesión y revisa los metadatos L7.
         </p>
       </div>
 
@@ -90,52 +88,9 @@ export default function FlowsPage() {
             )}
           </div>
           <CardDescription className="text-xs text-muted-foreground">
-            Seleccioná una sesión para ver sus flujos agregados.
+            Selecciona una sesión para ver sus flujos agregados.
           </CardDescription>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 items-end">
-            <div className="space-y-1">
-              <Label>Buscar IP/MAC/SNI</Label>
-              <div className="flex items-center gap-2">
-                <Search className="h-4 w-4 text-muted-foreground" />
-                <Input
-                  value={filters.search}
-                  onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
-                  placeholder="192.168.0.10"
-                />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <Label>Protocolo</Label>
-              <Select
-                value={filters.proto}
-                onValueChange={(value) => setFilters((prev) => ({ ...prev, proto: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="tcp">TCP</SelectItem>
-                  <SelectItem value="udp">UDP</SelectItem>
-                  <SelectItem value="http">HTTP</SelectItem>
-                  <SelectItem value="https">HTTPS</SelectItem>
-                  <SelectItem value="dns">DNS</SelectItem>
-                  <SelectItem value="quic">QUIC</SelectItem>
-                  <SelectItem value="ipp">IPP</SelectItem>
-                  <SelectItem value="ssh">SSH</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label className="flex items-center gap-2">
-                <Switch
-                  checked={filters.doh}
-                  onCheckedChange={(v) => setFilters((prev) => ({ ...prev, doh: v }))}
-                />
-                Mostrar solo DoH/DoT
-              </Label>
-            </div>
-          </div>
+          
         </CardHeader>
         <CardContent className="space-y-4">
           {sessionsLoading && (

@@ -38,7 +38,7 @@ export default function PortDetailPage() {
             Volver
           </Button>
           <Button variant="outline" disabled className="w-full sm:w-auto">
-            Exportar PDF (próximamente)
+            Exportar PDF 
           </Button>
         </div>
       </div>

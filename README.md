@@ -8,14 +8,14 @@ Este README resume el flujo “clonar → configurar → ejecutar” en una máq
 
 Si preferís trabajar aislado en una máquina virtual, te recomendamos:
 
-| Concepto              | Valor sugerido                                                       |
-|-----------------------|---------------------------------------------------------------------|
-| SO                    | Ubuntu 24.04 LTS (64 bits)                                          |
-| CPU                   | 2 vCPU                                                               |
-| RAM                   | ≥ 4 GB                                                              |
-| Disco                 | ≥ 40 GB                                                             |
-| Red                   | Adaptador “Bridged” + modo promiscuo “Allow All”                    |
-| Software base         | VS Code / editor a elección                                         |
+| Concepto              | Valor sugerido 
+
+| SO                    | Ubuntu 24.04 LTS (64 bits)
+| CPU                   | 2 vCPU 
+| RAM                   | ≥ 4 GB
+| Disco                 | ≥ 40 GB 
+| Red                   | Adaptador “Bridged” + modo promiscuo “Allow All” 
+| Software base         | VS Code / editor a elección 
 
 Esto asegura que los módulos de red (captura/escaneo) puedan ver tu LAN real y que la VM tenga recursos suficientes para compilar el frontend y correr Django.
 
@@ -119,27 +119,25 @@ sudo -E "$(pwd)/.venv/bin/python" backend/manage.py runserver
 
 ## 5. Estructura del repositorio
 
-| Carpeta/archivo          | Descripción                                                         |
-|--------------------------|---------------------------------------------------------------------|
-| `backend/`               | Proyecto Django (apps: agente, detector, captura, analitica, etc.) |
-| `frontend/`              | Aplicación Vite/React (auth, sidebar shadcn, módulos UI).          |
-| `docs/`                  | Documentación funcional (Informe, PlanTrabajo, diagramas).         |
-| `pcaps/`                 | Carpeta local para capturas (`.pcap`). No subir al repo.           |
-| `scripts/`               | Helpers y utilidades CLI.                                          |
-| `.env.example`           | Plantilla de variables para backend/frontend.                      |
-| `requirements.txt`       | Dependencias Python.                                               |
+| Carpeta/archivo          | Descripción 
+| `backend/`               | Proyecto Django (apps: agente, detector, captura, analitica, etc.)
+| `frontend/`              | Aplicación Vite/React (auth, sidebar shadcn, módulos UI).
+| `docs/`                  | Documentación funcional (Informe, PlanTrabajo, diagramas).
+| `pcaps/`                 | Carpeta local para capturas (`.pcap`). No subir al repo.
+| `scripts/`               | Helpers y utilidades CLI. 
+| `.env.example`           | Plantilla de variables para backend/frontend. 
+| `requirements.txt`       | Dependencias Python.
 
 ---
 
 ## 6. Comandos útiles
 
-| Tarea                        | Comando                                                                 |
-|------------------------------|-------------------------------------------------------------------------|
-| Aplicar migraciones          | `python backend/manage.py migrate`                                      |
-| Ejecutar tests Django        | `python backend/manage.py test`                                         |
-| Correr capturas/escaneos CLI | `sudo -E "$(pwd)/.venv/bin/python" backend/manage.py <command>`         |
-| Levantar frontend dev        | `cd frontend && npm run dev`                                            |
-| Generar build frontend       | `cd frontend && npm run build`                                          |
+| Tarea                        | Comando 
+| Aplicar migraciones            | `python backend/manage.py migrate`
+| Ejecutar tests Django        | `python backend/manage.py test` 
+| Correr capturas/escaneos CLI | `sudo -E "$(pwd)/.venv/bin/python" backend/manage.py <command>`
+| Levantar frontend dev        | `cd frontend && npm run dev` 
+| Generar build frontend       | `cd frontend && npm run build` 
 
 ---
 
@@ -149,4 +147,4 @@ sudo -E "$(pwd)/.venv/bin/python" backend/manage.py runserver
 - En la VM solemos instalar algunas librerías globalmente (`scapy`, `python-nmap`, etc.) para simplificar pruebas rápidas. Aun así, el entorno recomendado es el virtualenv del repo.  
 - La base de datos por defecto es SQLite (ideal para desarrollo). Para despliegues se migrará a PostgreSQL según planificación en `docs/PlanTrabajo.md`.
 
-> ¿Problemas? Revisá `docs/Informe.md` y `docs/PlanTrabajo.md` para conocer decisiones y pendientes actuales.
+

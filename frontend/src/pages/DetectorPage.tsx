@@ -120,11 +120,11 @@ export default function DetectorPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Detector de hosts</h1>
           <p className="text-sm text-muted-foreground">
-            Ejecutá escaneos para descubrir los dispositivos conectados a tu red local.
+            Ejecuta escaneos para descubrir los dispositivos conectados a tu red local.
           </p>
         </div>
         <Button variant="outline" disabled className="w-full sm:w-auto">
-          Exportar PDF (próximamente)
+          Exportar PDF
         </Button>
       </div>
 
@@ -133,7 +133,7 @@ export default function DetectorPage() {
           <CardHeader>
             <CardTitle>Ejecutar análisis</CardTitle>
             <CardDescription>
-              Elegí el tipo de escaneo y, si querés, una interfaz específica.
+              Elija el tipo de escaneo y, si quieres, una interfaz específica.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -168,7 +168,7 @@ export default function DetectorPage() {
                 <div>
                   <p className="font-medium">Intentar fingerprint activo</p>
                   <p className="text-xs text-muted-foreground">
-                    Ejecuta <code>nmap -O</code> por cada host para estimar el sistema operativo.
+                    Ejecuta nmap por cada host para estimar el sistema operativo.
                   </p>
                 </div>
                 <Switch checked={fingerprintOs} onCheckedChange={setFingerprintOs} />
