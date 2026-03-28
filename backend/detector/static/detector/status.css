@@ -1,0 +1,80 @@
+.history {
+    margin-top: 2.5rem;
+}
+
+.toggle-cell {
+    width: 140px;
+    text-align: right;
+}
+
+.toggle-btn {
+    padding: 0.6rem 1.1rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0;
+    background: #25262c;
+    color: #f5f5f5;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.toggle-btn:hover {
+    background: #2e3036;
+}
+
+.detail-row {
+    display: none;
+    position: relative;
+}
+
+.detail-row.open {
+    display: table-row;
+}
+
+.detail-card {
+    padding: 1.4rem 1.6rem;
+    border-radius: 0;
+    background: #1b1d22;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.detail-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.6rem 1.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+    color: #94a3b8;
+}
+
+.detail-card h4 {
+    margin: 1rem 0 0.8rem;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #f5f5f5;
+}
+
+.hosts-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.hosts-table th,
+.hosts-table td {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 0.65rem 0.75rem;
+    font-size: 0.85rem;
+}
+
+.hosts-table th {
+    background: rgba(255, 255, 255, 0.04);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #9ca3af;
+}
+
+.hosts-table tr:last-child td {
+    border-bottom: none;
+}

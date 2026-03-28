@@ -1,0 +1,46 @@
+import { useNavigate } from "react-router-dom"
+
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { useDevices } from "@/hooks/useDevices"
+
+import { DevicesDataTable } from "./DevicesDataTable"
+
+export default function DevicesPage() {
+  const navigate = useNavigate()
+  const { devices, loading, error } = useDevices()
+
+  const handleRowClick = (device: { id: number }) => {
+    navigate(`/detector/dispositivos/${device.id}`)
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between px-1">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Dispositivos detectados</h1>
+          <p className="text-sm text-muted-foreground">
+            Inventario consolidado de todos los dispositivos.
+          </p>
+        </div>
+        <Button variant="outline" disabled className="w-full sm:w-auto">
+          Exportar PDF 
+        </Button>
+      </div>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Listado</CardTitle>
+          <CardDescription>Dispositivos descubiertos por el detector.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <DevicesDataTable
+            data={devices}
+            loading={loading}
+            onRowClick={handleRowClick}
+            error={error}
+          />
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
